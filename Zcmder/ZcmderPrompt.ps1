@@ -1,0 +1,139 @@
+function Write-ZcmderPythonEnv {
+    $color = $global:ZcmderOptions.Colors.PythonEnv
+    $py = if (Test-Path env:CONDA_PROMPT_MODIFIER) {
+        $env:CONDA_PROMPT_MODIFIER.Trim()
+    } elseif (Test-Path env:VIRTUAL_ENV) {
+        $env:VIRTUAL_ENV.Trim()
+    }
+    if ($py) {
+        Write-Host "$py " -NoNewline -Foreground $color
+    }
+}
+
+function Write-ZcmderUsername {
+    $sp = ""
+    if (!$global:ZcmderOptions.Components.Hostname) {
+        $sp = " "
+    }
+    Write-Host $env:USERNAME$sp -NoNewline -Foreground $global:ZcmderOptions.Colors.Username
+}
+
+function Write-ZcmderHostname {
+    $sep = ""
+    if ($global:ZcmderOptions.Components.Username) {
+        $sep = "@"
+    }
+    Write-Host "$sep$env:COMPUTERNAME " -NoNewline -Foreground $global:ZcmderOptions.Colors.Hostname
+}
+
+function Write-ZcmderCwd {
+    $path = $ExecutionContext.SessionState.Path.CurrentLocation
+    $p = Write-ZcmderPath $path
+
+    $prefix = ""
+    $color = $global:ZcmderOptions.Colors.Cwd
+    if (Test-IsReadOnlyDir $path) {
+        $prefix = $global:ZcmderOptions.Strings.ReadOnlyPrefix
+        $color = $global:ZcmderOptions.Colors.CwdReadOnly
+    }
+    Write-Host "$prefix$p" -NoNewline -Foreground $color
+}
+
+function Write-ZcmderGitStatus {
+    # NOTE: Set-ZcmderStateGitStatus must be called first for this to be accurate
+
+    $opts = $global:ZcmderOptions
+    $state = $global:ZcmderState
+
+    if (!$state.Git.IsRepo) {
+        return
+    }
+
+    Write-Host $opts.Strings.GitPrefix -NoNewline
+
+    # get status modifiers from local changes
+    $modifier = ""
+    if ($state.Git.Changes) {
+        $modifier += $opts.Strings.GitDirtyPostfix
+    }
+    # otherwise repo is clean, but don't show if in a new repo
+    elseif ($state.Git.Label -ne $opts.Strings.GitLabelNew) {
+        $modifier = $opts.Strings.GitCleanPostfix
+    }
+    # add stashed modifier
+    if ($state.Git.Stashed) {
+        $modifier += $opts.Strings.GitStashedModifier
+    }
+
+    # branch suffix from remote status
+    $diverged = $state.Git.IsDiverged()
+    $suffix = ""
+    if ($diverged) {
+        $suffix = $opts.Strings.GitDivergedPostfix
+    } elseif ($state.Git.Ahead) {
+        $suffix = $opts.Strings.GitAheadPostfix
+    } elseif ($state.Git.Behind) {
+        $suffix = $opts.Strings.GitBehindPostfix
+    }
+
+    # get color based on local or remote
+    $color = if ($state.Git.Changes -and ($state.Git.Changes -eq $state.Git.Staged)) {
+        $opts.Colors.GitStaged
+    } elseif ($state.Git.Unmerged -or $diverged) {
+        $opts.Colors.GitUnmerged
+    } elseif ($state.Git.Untracked -gt 0) {
+        $opts.Colors.GitUntracked
+    } elseif ($state.Git.Modified -gt 0) {
+        $opts.Colors.GitModified
+    } else {
+        $opts.Colors.GitBranchDefault
+    }
+
+    $remote = if ($state.Git.Remote) { ":" + $state.Git.Remote }
+    $label = $opts.Strings.GitBranchIcon + $state.Git.Label
+    Write-Host $label$remote$modifier$suffix -NoNewline -Foreground $color
+}
+
+function Write-ZcmderCaret {
+    $state = $global:ZcmderState
+    $opts = $global:ZcmderOptions
+
+    $color = if ($state.ExitCode -eq 0) { $opts.Colors.Caret } else { $opts.Colors.CaretError }
+    $caret = if ($state.IsAdmin) { $opts.Strings.CaretAdmin } else { $opts.Strings.Caret }
+    Write-Host
+    Write-Host $caret -NoNewline -Foreground $color
+}
+
+function Write-ZcmderPrompt {
+    $opts = $global:ZcmderOptions
+
+    # if set, update git status first to avoid choppy printing
+    if ($opts.DeferPromptWrite -and $opts.Components.GitStatus) {
+        Set-ZcmderStateGitStatus
+    }
+    # new line before prompt if not at top row
+    if ($opts.NewlineAfterCmd -and !$Host.UI.RawUI.CursorPosition.Y -eq 0) {
+        Write-Host
+    }
+    if ($opts.Components.PythonEnv) {
+        Write-ZcmderPythonEnv
+    }
+    if ($opts.Components.Username) {
+        Write-ZcmderUsername
+    }
+    if ($opts.Components.Hostname) {
+        Write-ZcmderHostname
+    }
+    if ($opts.Components.Cwd) {
+        Write-ZcmderCwd
+    }
+    if ($opts.Components.GitStatus) {
+        if (!$opts.DeferPromptWrite) {
+            Set-ZcmderStateGitStatus
+        }
+        Write-ZcmderGitStatus
+    }
+    Write-ZcmderCaret
+    # need this final string to not get default PS> prompt
+    " "
+}
