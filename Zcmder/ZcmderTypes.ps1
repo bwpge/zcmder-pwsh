@@ -18,13 +18,14 @@ class ZCOptions {
         GitAheadPostfix     = " ↑"
         GitBehindPostfix    = " ↓"
         GitBranchIcon       = " "
-        GitLabelNew          = "(new)"
         GitCleanPostfix     = " ✓"
         GitDirtyPostfix     = " *"
         GitDivergedPostfix  = " ↑↓"
+        GitLabelNew          = "(new)"
         GitPostfix          = ""
         GitPrefix           = " on "
         GitStashedModifier  = " ⚑"
+        ReadOnlyPrefix      = " "
     }
 
     [hashtable]$Colors = @{
@@ -52,11 +53,11 @@ class ZCGitStatus {
     [int]$Untracked = 0
     [int]$Unmerged = 0
     [int]$Modified = 0
+    [int]$Stashed = 0
+    [int]$Staged = 0
     [string]$Label = ""
     [string]$Remote = ""
     $Dir = $null
-    [int]$Stashed = 0
-    [int]$Staged = 0
     [bool]$IsRepo = $false
 
     [bool] IsDiverged() {

@@ -1,11 +1,12 @@
 function Write-ZcmderPythonEnv {
     $color = $global:ZcmderOptions.Colors.PythonEnv
     $py = if (Test-Path env:CONDA_PROMPT_MODIFIER) {
-        $env:CONDA_PROMPT_MODIFIER.Trim()
+        $env:CONDA_PROMPT_MODIFIER
     } elseif (Test-Path env:VIRTUAL_ENV) {
-        $env:VIRTUAL_ENV.Trim()
+        $env:VIRTUAL_ENV
     }
     if ($py) {
+        $py = $py.Trim()
         Write-Host "$py " -NoNewline -Foreground $color
     }
 }
@@ -27,14 +28,15 @@ function Write-ZcmderHostname {
 }
 
 function Write-ZcmderCwd {
+    $opts = $global:ZcmderOptions
     $path = $ExecutionContext.SessionState.Path.CurrentLocation
     $p = Write-ZcmderPath $path
 
     $prefix = ""
     $color = $global:ZcmderOptions.Colors.Cwd
     if (Test-IsReadOnlyDir $path) {
-        $prefix = $global:ZcmderOptions.Strings.ReadOnlyPrefix
-        $color = $global:ZcmderOptions.Colors.CwdReadOnly
+        $prefix = $opts.Strings.ReadOnlyPrefix
+        $color = $opts.Colors.CwdReadOnly
     }
     Write-Host "$prefix$p" -NoNewline -Foreground $color
 }

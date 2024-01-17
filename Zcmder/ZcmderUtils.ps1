@@ -36,7 +36,7 @@ function Test-IsReadOnlyDir {
 }
 
 function Write-ZcmderPath {
-    param ($path)
+    param ([string]$path)
 
     $result = $path
     if ($global:ZcmderOptions.UnixPathStyle) {
