@@ -70,3 +70,12 @@ class ZCState {
     $IsAdmin = $false
     [ZCGitStatus]$Git = [ZCGitStatus]::new()
 }
+
+class ZCDebugInfo {
+    [ZCOptions]$Options
+    [ZCState]$State
+    [TimeSpan]$GitStatusUpdate
+    [TimeSpan]$PromptWrite
+    [TimeSpan]$PromptElapsed
+    [TimeSpan]$TotalElapsed
+}

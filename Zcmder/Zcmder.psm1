@@ -2,6 +2,7 @@
 . $PSScriptRoot\ZcmderGit.ps1
 . $PSScriptRoot\ZcmderPrompt.ps1
 . $PSScriptRoot\ZcmderUtils.ps1
+. $PSScriptRoot\ZcmderDebug.ps1
 
 $default_prompt = Get-CurrentPrompt
 
