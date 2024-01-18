@@ -1,4 +1,4 @@
-function Write-ZcmderPythonEnv {
+function Write-ZCPythonEnv {
     $color = $global:ZcmderOptions.Colors.PythonEnv
     $py = if (Test-Path env:CONDA_PROMPT_MODIFIER) {
         $env:CONDA_PROMPT_MODIFIER
@@ -11,7 +11,7 @@ function Write-ZcmderPythonEnv {
     }
 }
 
-function Write-ZcmderUsername {
+function Write-ZCUsername {
     $sp = ""
     if (!$global:ZcmderOptions.Components.Hostname) {
         $sp = " "
@@ -19,7 +19,7 @@ function Write-ZcmderUsername {
     Write-Host $env:USERNAME$sp -NoNewline -Foreground $global:ZcmderOptions.Colors.Username
 }
 
-function Write-ZcmderHostname {
+function Write-ZCHostname {
     $sep = ""
     if ($global:ZcmderOptions.Components.Username) {
         $sep = "@"
@@ -27,10 +27,10 @@ function Write-ZcmderHostname {
     Write-Host "$sep$env:COMPUTERNAME " -NoNewline -Foreground $global:ZcmderOptions.Colors.Hostname
 }
 
-function Write-ZcmderCwd {
+function Write-ZCCwd {
     $opts = $global:ZcmderOptions
     $path = $ExecutionContext.SessionState.Path.CurrentLocation
-    $p = Write-ZcmderPath $path
+    $p = Write-ZCPath $path
 
     $prefix = ""
     $color = $global:ZcmderOptions.Colors.Cwd
@@ -41,8 +41,8 @@ function Write-ZcmderCwd {
     Write-Host "$prefix$p" -NoNewline -Foreground $color
 }
 
-function Write-ZcmderGitStatus {
-    # NOTE: Set-ZcmderStateGitStatus must be called first for this to be accurate
+function Write-ZCGitStatus {
+    # NOTE: Set-ZCStateGitStatus must be called first for this to be accurate
 
     $opts = $global:ZcmderOptions
     $state = $global:ZcmderState
@@ -96,7 +96,7 @@ function Write-ZcmderGitStatus {
     Write-Host $label$remote$modifier$suffix -NoNewline -Foreground $color
 }
 
-function Write-ZcmderCaret {
+function Write-ZCCaret {
     $state = $global:ZcmderState
     $opts = $global:ZcmderOptions
 
@@ -111,31 +111,29 @@ function Write-ZcmderPrompt {
 
     # if set, update git status first to avoid choppy printing
     if ($opts.DeferPromptWrite -and $opts.Components.GitStatus) {
-        Set-ZcmderStateGitStatus
+        Set-ZCStateGitStatus
     }
     # new line before prompt if not at top row
     if ($opts.NewlineAfterCmd -and !$Host.UI.RawUI.CursorPosition.Y -eq 0) {
         Write-Host
     }
     if ($opts.Components.PythonEnv) {
-        Write-ZcmderPythonEnv
+        Write-ZCPythonEnv
     }
     if ($opts.Components.Username) {
-        Write-ZcmderUsername
+        Write-ZCUsername
     }
     if ($opts.Components.Hostname) {
-        Write-ZcmderHostname
+        Write-ZCHostname
     }
     if ($opts.Components.Cwd) {
-        Write-ZcmderCwd
+        Write-ZCCwd
     }
     if ($opts.Components.GitStatus) {
         if (!$opts.DeferPromptWrite) {
-            Set-ZcmderStateGitStatus
+            Set-ZCStateGitStatus
         }
-        Write-ZcmderGitStatus
+        Write-ZCGitStatus
     }
-    Write-ZcmderCaret
-    # need this final string to not get default PS> prompt
-    " "
+    Write-ZCCaret
 }

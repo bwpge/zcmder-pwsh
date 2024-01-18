@@ -1,4 +1,4 @@
-function Get-CurrentPrompt {
+function Get-ZCCurrentPrompt {
     if ($current = Get-Command prompt -ErrorAction SilentlyContinue) {
         $current.Definition
     } else {
@@ -6,7 +6,7 @@ function Get-CurrentPrompt {
     }
 }
 
-function Test-ZcmderIsAdmin {
+function Test-ZCIsAdmin {
     (New-Object Security.Principal.WindowsPrincipal(
         [Security.Principal.WindowsIdentity]::GetCurrent())
     ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -35,7 +35,7 @@ function Test-IsReadOnlyDir {
     @($acl).Length -eq 0
 }
 
-function Write-ZcmderPath {
+function Write-ZCPath {
     param ([string]$path)
 
     $result = $path
@@ -56,7 +56,7 @@ function Write-ZcmderPath {
     $result
 }
 
-function Test-ZcmderCmdExists {
+function Test-ZCCmdExists {
     param ($command)
     $original = $ErrorActionPreference
     $ErrorActionPreference = "Stop"

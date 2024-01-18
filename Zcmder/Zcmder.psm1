@@ -4,24 +4,27 @@
 . $PSScriptRoot\ZcmderUtils.ps1
 . $PSScriptRoot\ZcmderDebug.ps1
 
-$default_prompt = Get-CurrentPrompt
+$default_prompt = Get-ZCCurrentPrompt
+$is_admin = Test-ZCIsAdmin
 
 $prompt_block = {
-    $exit_code = $LASTEXITCODE
+    $exit_code = $global:LASTEXITCODE
 
     if(!$global:ZcmderOptions) {
         $global:ZcmderOptions = [ZCOptions]::new()
     }
     if(!$global:ZcmderState) {
         $global:ZcmderState = [ZCState]::new()
-        $global:ZcmderState.IsAdmin = Test-ZcmderIsAdmin
     }
 
     $global:ZcmderState.ExitCode = $exit_code
+    $global:ZcmderState.IsAdmin = $is_admin
 
     $prompt = Write-ZcmderPrompt
     $global:LASTEXITCODE = $exit_code
-    $prompt
+
+    # need to return a string to get the PS> prompt
+    " "
 }
 
 <#
@@ -47,7 +50,7 @@ $ExecutionContext.SessionState.Module.OnRemove = {
         Set-Item Function:\prompt -Value ([scriptblock]::Create($default_prompt))
     }
 
-    # always clean up zcmder variables
-    try { Remove-Variable ZcmderOptions -Scope Global } catch {}
-    try { Remove-Variable ZcmderState -Scope Global } catch {}
+    # always clean up our global variables
+    Remove-Variable -Name ZcmderOptions -Scope Global -EA 0
+    Remove-Variable -Name ZcmderState -Scope Global -EA 0
 }

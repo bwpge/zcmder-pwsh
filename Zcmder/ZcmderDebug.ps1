@@ -1,4 +1,21 @@
-function Get-PropertyTable {
+function Format-ZCPropertyValue {
+    param($value, $ty)
+
+    if (!$ty -and ($value -ne $null)) {
+        $ty = $value.GetType().Name
+    }
+
+    if ($ty -eq "TimeSpan") {
+        "$($value.TotalMilliseconds) ms"
+    } elseif ($ty -eq "String") {
+        '"' + $value + '"'
+    }
+    else {
+        $value
+    }
+}
+
+function Get-ZCPropertyTable {
     param($obj, [string]$label)
 
     $table = @{}
@@ -8,33 +25,31 @@ function Get-PropertyTable {
             $table[$k] = '$null'
             continue
         }
-        $ty = $prop.Value.GetType().Name
 
+        $ty = $prop.Value.GetType().Name
         if ($ty -eq "Hashtable") {
             foreach ($item in $prop.Value.GetEnumerator()) {
                 $key = "$k.$($item.Name)"
-                $table[$key] = $item.Value
+                $table[$key] = Format-ZCPropertyValue $item.Value
             }
             continue
         } elseif (($ty -eq "ZCOptions") -or ($ty -eq "ZCState") -or ($ty -eq "ZCGitStatus")) {
-            Get-PropertyTable $prop.Value $k
+            Get-ZCPropertyTable $prop.Value $k
             continue
         }
 
+        $v = Format-ZCPropertyValue $prop.Value $ty
         if ($ty -eq "TimeSpan") {
-            $table["Times.$k"] = "$($prop.Value.TotalMilliseconds) ms"
-        } elseif ($ty -eq "String") {
-            $table[$k] = "'" + $prop.Value + "'"
-        }
-        else {
-            $table[$k] = $prop.Value
+            $table["Times.$k"] = $v
+        } else {
+            $table[$k] = $v
         }
     }
 
     $table
 }
 
-function Merge-PropertyTables {
+function Merge-ZCPropertyTables {
     param([hashtable[]]$tables)
 
     $table = @{}
@@ -47,36 +62,63 @@ function Merge-PropertyTables {
     $table
 }
 
+function Write-ZCSortedTable {
+    param([hashtable]$table)
+
+    $table | %{
+        $_.GetEnumerator() |
+        Sort-Object -Property Name |
+        Format-Table -AutoSize -HideTableHeaders
+    }
+}
+
+function Write-ZCDebugHeader {
+    param([string]$header)
+
+    $div = '-' * $header.Length
+    Write-Host "$($header.ToUpper())`n$div" -Foreground DarkGreen
+}
+
 function Write-ZcmderDebugInfo {
     [CmdletBinding()]
     param()
 
+    $exit_code = $global:LASTEXITCODE
 
     $begin = Get-Date
-
     $info = [ZCDebugInfo]::new()
     $info.Options = $global:ZcmderOptions
     $info.State = $global:ZcmderState
 
+    Write-Host
+    Write-ZCDebugHeader "Module info"
+    Get-Module -ListAvailable | ?{ $_.Name -eq "Zcmder" } | %{
+        $mod_info = @{}
+        $_ | Select-Object -Property Guid,Name,Version,ModuleBase,Path | %{
+            $_.PSObject.Properties |
+            %{ $mod_info[$_.Name] = $_.Value }
+        }
+        Write-ZCSortedTable $mod_info
+        Write-Host
+    }
+
     $start = Get-Date
-    Set-ZcmderStateGitStatus
+    Set-ZCStateGitStatus
     $info.GitStatusUpdate = (Get-Date) - $start
 
-    Write-Host "Prompt output:`n>>>>>>>>>>"
+    Write-ZCDebugHeader "Prompt output"
+    Write-Host ">>>>>>>>>>"
     $start = Get-Date
     Write-ZcmderPrompt
-    $info.PromptWrite = (Get-Date) - $start
+    $info.PromptElapsed = (Get-Date) - $start
     Write-Host "<<<<<<<<<<`n"
 
-    $info.PromptElapsed = $info.PromptWrite + $info.GitStatusUpdate
-    $info.TotalElapsed = (Get-Date) - $begin
+    $info.DebugElapsed = (Get-Date) - $begin
 
-    Write-Host "Debug info:"
-    $table = Merge-PropertyTables (Get-PropertyTable $info)
-    $table | %{
-        Write-Host
-        $_.GetEnumerator() |
-        Sort-Object -Property Name |
-        Format-Table -AutoSize
-    }
+    Write-ZCDebugHeader "Debug info"
+    $table = Merge-ZCPropertyTables (Get-ZCPropertyTable $info)
+    Write-ZCSortedTable $table
+
+    $global:LASTEXITCODE = $exit_code
+    $global:ZcmderState.ExitCode = $exit_code
 }

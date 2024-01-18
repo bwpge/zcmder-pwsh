@@ -75,7 +75,6 @@ class ZCDebugInfo {
     [ZCOptions]$Options
     [ZCState]$State
     [TimeSpan]$GitStatusUpdate
-    [TimeSpan]$PromptWrite
     [TimeSpan]$PromptElapsed
-    [TimeSpan]$TotalElapsed
+    [TimeSpan]$DebugElapsed
 }
