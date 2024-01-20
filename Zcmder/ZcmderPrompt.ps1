@@ -1,12 +1,11 @@
 function Write-ZCPythonEnv {
     $color = $global:ZcmderOptions.Colors.PythonEnv
     $py = if (Test-Path env:CONDA_PROMPT_MODIFIER) {
-        $env:CONDA_PROMPT_MODIFIER
+        ($env:CONDA_PROMPT_MODIFIER).Trim()
     } elseif (Test-Path env:VIRTUAL_ENV) {
-        $env:VIRTUAL_ENV
+        "($($(Get-Item $env:VIRTUAL_ENV).Basename))"
     }
     if ($py) {
-        $py = $py.Trim()
         Write-Host "$py " -NoNewline -Foreground $color
     }
 }
@@ -16,7 +15,7 @@ function Write-ZCUsername {
     if (!$global:ZcmderOptions.Components.Hostname) {
         $sp = " "
     }
-    Write-Host $env:USERNAME$sp -NoNewline -Foreground $global:ZcmderOptions.Colors.Username
+    Write-Host $env:USERNAME$sp -NoNewline -Foreground $global:ZcmderOptions.Colors.UserAndHost
 }
 
 function Write-ZCHostname {
@@ -24,7 +23,7 @@ function Write-ZCHostname {
     if ($global:ZcmderOptions.Components.Username) {
         $sep = "@"
     }
-    Write-Host "$sep$env:COMPUTERNAME " -NoNewline -Foreground $global:ZcmderOptions.Colors.Hostname
+    Write-Host "$sep$env:COMPUTERNAME " -NoNewline -Foreground $global:ZcmderOptions.Colors.UserAndHost
 }
 
 function Write-ZCCwd {
@@ -51,7 +50,7 @@ function Write-ZCGitStatus {
         return
     }
 
-    Write-Host $opts.Strings.GitPrefix -NoNewline
+    Write-Host $opts.Strings.GitSeparator -NoNewline
 
     # get status modifiers from local changes
     $modifier = ""
@@ -92,7 +91,7 @@ function Write-ZCGitStatus {
     }
 
     $remote = if ($state.Git.Remote) { ":" + $state.Git.Remote }
-    $label = $opts.Strings.GitBranchIcon + $state.Git.Label
+    $label = $opts.Strings.GitPrefix + $state.Git.Label
     Write-Host $label$remote$modifier$suffix -NoNewline -Foreground $color
 }
 
@@ -114,7 +113,7 @@ function Write-ZcmderPrompt {
         Set-ZCStateGitStatus
     }
     # new line before prompt if not at top row
-    if ($opts.NewlineAfterCmd -and !$Host.UI.RawUI.CursorPosition.Y -eq 0) {
+    if ($opts.NewlineBeforePrompt -and !$Host.UI.RawUI.CursorPosition.Y -eq 0) {
         Write-Host
     }
     if ($opts.Components.PythonEnv) {

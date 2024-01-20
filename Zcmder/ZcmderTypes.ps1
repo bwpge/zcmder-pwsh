@@ -1,8 +1,8 @@
 class ZCOptions {
-    [bool]$UnixPathStyle = $true
-    [bool]$NewlineAfterCmd = $true
-    [bool]$GitShowRemote = $false
     [bool]$DeferPromptWrite = $false
+    [bool]$GitShowRemote = $false
+    [bool]$NewlineBeforePrompt = $true
+    [bool]$UnixPathStyle = $true
 
     [hashtable]$Components = @{
         Cwd = $true
@@ -17,13 +17,13 @@ class ZCOptions {
         CaretAdmin          = "#"
         GitAheadPostfix     = " ↑"
         GitBehindPostfix    = " ↓"
-        GitBranchIcon       = " "
         GitCleanPostfix     = " ✓"
         GitDirtyPostfix     = " *"
         GitDivergedPostfix  = " ↑↓"
-        GitLabelNew          = "(new)"
+        GitLabelNew         = "(new)"
         GitPostfix          = ""
-        GitPrefix           = " on "
+        GitPrefix           = " "
+        GitSeparator        = " on "
         GitStashedModifier  = " ⚑"
         ReadOnlyPrefix      = " "
     }
@@ -39,9 +39,8 @@ class ZCOptions {
         GitStaged           = "DarkBlue"
         GitUnmerged         = "DarkMagenta"
         GitUntracked        = "DarkRed"
-        Hostname            = "DarkBlue"
         PythonEnv           = "DarkGray"
-        Username            = "DarkBlue"
+        UserAndHost         = "DarkBlue"
     }
 }
 
