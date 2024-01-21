@@ -33,7 +33,7 @@ function Write-ZCCwd {
 
     $prefix = ""
     $color = $global:ZcmderOptions.Colors.Cwd
-    if (Test-IsReadOnlyDir $path) {
+    if (!$global:ZcmderState.IsAdmin -and (Test-IsReadOnlyDir $path)) {
         $prefix = $opts.Strings.ReadOnlyPrefix
         $color = $opts.Colors.CwdReadOnly
     }
