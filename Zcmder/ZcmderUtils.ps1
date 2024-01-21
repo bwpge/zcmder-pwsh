@@ -70,3 +70,11 @@ function Test-ZCCmdExists {
 
     $false
 }
+
+function Remove-ZCVariable {
+    param($name)
+
+    if (Get-Variable -Scope Global $name 2>$null) {
+        Remove-Variable -Name $name -Scope Global -EA 0
+    }
+}

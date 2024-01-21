@@ -7,16 +7,13 @@
 $default_prompt = Get-ZCCurrentPrompt
 $is_admin = Test-ZCIsAdmin
 
+Remove-ZCVariable ZcmderOptions
+Remove-ZCVariable ZcmderState
+$global:ZcmderOptions = [ZCOptions]::new()
+$global:ZcmderState = [ZCState]::new()
+
 $prompt_block = {
     $exit_code = $global:LASTEXITCODE
-
-    if(!$global:ZcmderOptions) {
-        $global:ZcmderOptions = [ZCOptions]::new()
-    }
-    if(!$global:ZcmderState) {
-        $global:ZcmderState = [ZCState]::new()
-    }
-
     $global:ZcmderState.ExitCode = $exit_code
     $global:ZcmderState.IsAdmin = $is_admin
 
@@ -51,6 +48,6 @@ $ExecutionContext.SessionState.Module.OnRemove = {
     }
 
     # always clean up our global variables
-    Remove-Variable -Name ZcmderOptions -Scope Global -EA 0
-    Remove-Variable -Name ZcmderState -Scope Global -EA 0
+    Remove-ZCVariable ZcmderOptions
+    Remove-ZCVariable ZcmderState
 }
