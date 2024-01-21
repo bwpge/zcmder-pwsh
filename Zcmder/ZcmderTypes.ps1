@@ -1,4 +1,4 @@
-class ZCOptions {
+﻿class ZCOptions {
     [bool]$DeferPromptWrite = $false
     [bool]$GitShowRemote = $false
     [bool]$NewlineBeforePrompt = $true
