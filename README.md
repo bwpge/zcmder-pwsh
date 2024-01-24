@@ -100,7 +100,7 @@ Git status colors have the following priority:
 | Key | Type | Usage |
 | --- | ---- | ----- |
 | `Caret` | `ZCColor` | Default caret color |
-| `Caret_error` | `ZCColor` | Caret color when the last exit code was non-zero |
+| `CaretError` | `ZCColor` | Caret color when the last exit code was non-zero |
 | `Cwd` | `ZCColor` | Color of the current working directory |
 | `CwdReadOnly` | `ZCColor` | Color when the current working directory is read-only |
 | `GitBranchDefault` | `ZCColor` | Default git status color |
