@@ -54,7 +54,7 @@ Set-ZcmderPrompt
 
 # zcmder options
 $ZcmderOptions.Colors.GitBranchDefault = 'DarkMagenta'  # use magenta for default git branch color
-$ZcmderOptions.Colors.GitNewRepo = 'Blue'  # use bright blue for new repo color
+$ZcmderOptions.Colors.GitNewRepo.Background = '#2277ff'  # use RGB value for new repo bg color
 $ZcmderOptions.Components.PythonEnv = $false  # disable python env prefix
 $ZcmderOptions.Strings.GitSeparator = ' '  # remove ' on ' before git prompt
 $ZcmderOptions.Strings.GitPrefix = '■ '  # use different branch icon
@@ -77,7 +77,16 @@ Controls general behavior of the prompt.
 
 Controls colors of the various items in the prompt.
 
-Color names must be valid values to the [`-ForegroundColor` argument of `Write-Host`](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/write-host#-foregroundcolor). Note that a quirk about this cmdlet is that `Dark<color>` is the "regular" color, while `<Color>` is the "bright" equivalent.
+Colors (`ZCColor`) are essentially a pair of color values, `Foreground` and `Background`. A color can be directly assigned to, implying a foreground color (e.g., `$ZcmderOptions.Colors.Cwd = 'DarkRed'`), or you can assign to the `Foreground` and `Background` properties directly (e.g., `$ZcmderOptions.Colors.Cwd.Background = '#FFFFFF'`).
+
+Valid colors have the following form:
+
+- [`ConsoleColor`](https://learn.microsoft.com/en-us/dotnet/api/system.consolecolor) enum name (e.g., `'DarkRed'` or `'White'`)
+    - `ConsoleColor` names can be confusing: `Dark<color>` values are the "standard" colors, while `<color>` is the "bright" or "intense" variation
+    - These values are converted to 256-color values (0-7 for standard, 8-15 for bright or intense)
+- 256-color integer value (e.g., `8` for "bright black" or `142` for `Gold3`, see [this reference](https://ss64.com/bash/syntax-colors.html))
+- Hex RGB string `'#RRGGBB'`
+- `$null` for no color
 
 Git status colors have the following priority:
 
@@ -90,18 +99,18 @@ Git status colors have the following priority:
 
 | Key | Type | Usage |
 | --- | ---- | ----- |
-| `Caret` | color | Default caret color |
-| `Caret_error` | color | Caret color when the last exit code was non-zero |
-| `Cwd` | color | Color of the current working directory |
-| `CwdReadOnly` | color | Color when the current working directory is read-only |
-| `GitBranchDefault` | color | Default git status color |
-| `GitModified` | color | Git status color when only tracked files are modified |
-| `GitNewRepo` | color | Git status color when in a new repository |
-| `GitStaged` | color | Git status color when all local changes are staged |
-| `GitUnmerged` |color | Git status when there are unmerged changes |
-| `GitUntracked` | color | Git status when untracked (dirty) files are present |
-| `PythonEnv` | color | The color for current python environment name |
-| `UserAndHost` | color | Color for both username and hostname components |
+| `Caret` | `ZCColor` | Default caret color |
+| `Caret_error` | `ZCColor` | Caret color when the last exit code was non-zero |
+| `Cwd` | `ZCColor` | Color of the current working directory |
+| `CwdReadOnly` | `ZCColor` | Color when the current working directory is read-only |
+| `GitBranchDefault` | `ZCColor` | Default git status color |
+| `GitModified` | `ZCColor` | Git status color when only tracked files are modified |
+| `GitNewRepo` | `ZCColor` | Git status color when in a new repository |
+| `GitStaged` | `ZCColor` | Git status color when all local changes are staged |
+| `GitUnmerged` | `ZCColor` | Git status when there are unmerged changes |
+| `GitUntracked` | `ZCColor` | Git status when untracked (dirty) files are present |
+| `PythonEnv` | `ZCColor` | The color for current python environment name |
+| `UserAndHost` | `ZCColor` | Color for both username and hostname components |
 
 ### `ZCOptions.Components`
 
@@ -134,3 +143,39 @@ Controls values or tokens in each component that are printed.
 |`GitStashedModifier`| string | Printed when repo contains stashes |
 |`GitSuffix`| string | Suffix always printed for git status e.g., `)` |
 |`ReadOnlyPrefix`| string | Printed before current working directory when read-only |
+
+## Debugging
+
+You can display debug information with the `Write-ZcmderDebugInfo` cmdlet. This is useful if you get a `PS>` prompt (which indicates `$global:prompt` function had error output). The cmdlet will attempt to write the prompt and display error information.
+
+The output of `Write-ZcmderDebugInfo` is particularly helpful to attach in issues. It will look something like:
+
+```
+MODULE INFO
+-----------
+
+Guid       2f55cab3-5190-4291-839a-4f45b5ae19b2
+ModuleBase C:\Users\user\Documents\PowerShell\Modules\Zcmder
+Name       Zcmder
+Path       C:\Users\user\Documents\PowerShell\Modules\Zcmder\Zcmder.psd1
+Version    x.y.z
+
+
+PROMPT OUTPUT
+-------------
+>>>>>>>>>>
+
+~
+λ
+<<<<<<<<<<
+
+DEBUG INFO
+----------
+
+(...truncated for brevity...)
+Times.DebugElapsed                 564.7499 ms
+Times.GitStatusUpdate              19.8973 ms
+Times.PromptElapsed                52.3646 ms
+```
+
+Note, you may want to sanitize your username if it is captured in the `ModuleBase` or `Path` values.
