@@ -6,7 +6,7 @@ A lot of this module's implementation uses the great work done by the authors of
 
 ## Requirements
 
-This module requires a minimum version of PowerShell 5.0 (a fresh install of Windows 10/11 should come with 5.1).
+This module requires a minimum version of PowerShell 5.1 (a fresh install of Windows 10/11 should come with 5.1).
 
 ## Installation
 
