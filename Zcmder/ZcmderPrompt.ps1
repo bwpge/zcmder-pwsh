@@ -24,14 +24,13 @@ function Write-ZCHost {
     }
 
     process {
+        $PSBoundParameters.Remove("Color")
         if (!$Color) {
             Write-Host @PSBoundParameters
             return
         }
-        $seq = $Color.ToAnsiString()
-
         $PSBoundParameters.Remove("Object")
-        $PSBoundParameters.Remove("Color")
+        $seq = $Color.ToAnsiString()
 
         Write-Host "$seq$Object$reset" @PSBoundParameters
     }

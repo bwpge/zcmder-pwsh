@@ -1,7 +1,10 @@
 function Format-ZCPropertyValue {
     param($value, $ty)
 
-    if (!$ty -and ($value -ne $null)) {
+    if ($value -eq $null) {
+        return '$null'
+    }
+    if (!$ty) {
         $ty = $value.GetType().Name
     }
 
