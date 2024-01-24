@@ -1,3 +1,42 @@
+# this function uses beatcracker/Powershell-Misc as a reference for implementation
+# see: https://github.com/beatcracker/Powershell-Misc/blob/master/Write-Host.ps1
+function Write-ZCHost {
+    [CmdletBinding()]
+    param(
+        [Parameter(
+            Position=0,
+            ValueFromPipeline=$true,
+            ValueFromRemainingArguments=$true
+        )]
+        [Alias('Msg', 'Message')]
+        [System.Object[]]$Object,
+        [System.Object]$Separator,
+        [AllowNull()]
+        [ZCColor]$Color,
+        [switch]$NoNewline
+    )
+
+    # see: https://en.wikipedia.org/wiki/ANSI_escape_code
+    begin {
+        $esc = [char]27
+        $ansi_fmt = "$esc[{0}m"
+        $reset = $ansi_fmt -f '0'
+    }
+
+    process {
+        if (!$Color) {
+            Write-Host @PSBoundParameters
+            return
+        }
+        $seq = $Color.ToAnsiString()
+
+        $PSBoundParameters.Remove("Object")
+        $PSBoundParameters.Remove("Color")
+
+        Write-Host "$seq$Object$reset" @PSBoundParameters
+    }
+}
+
 function Write-ZCPythonEnv {
     $color = $global:ZcmderOptions.Colors.PythonEnv
     $py = if (Test-Path env:CONDA_PROMPT_MODIFIER) {
@@ -6,7 +45,7 @@ function Write-ZCPythonEnv {
         "($($(Get-Item $env:VIRTUAL_ENV).Basename))"
     }
     if ($py) {
-        Write-Host "$py " -NoNewline -Foreground $color
+        Write-ZCHost "$py " -NoNewline -Color $color
     }
 }
 
@@ -15,7 +54,7 @@ function Write-ZCUsername {
     if (!$global:ZcmderOptions.Components.Hostname) {
         $sp = " "
     }
-    Write-Host $env:USERNAME$sp -NoNewline -Foreground $global:ZcmderOptions.Colors.UserAndHost
+    Write-ZCHost $env:USERNAME$sp -NoNewline -Color $global:ZcmderOptions.Colors.UserAndHost
 }
 
 function Write-ZCHostname {
@@ -23,7 +62,7 @@ function Write-ZCHostname {
     if ($global:ZcmderOptions.Components.Username) {
         $sep = "@"
     }
-    Write-Host "$sep$env:COMPUTERNAME " -NoNewline -Foreground $global:ZcmderOptions.Colors.UserAndHost
+    Write-ZCHost "$sep$env:COMPUTERNAME " -NoNewline -Color $global:ZcmderOptions.Colors.UserAndHost
 }
 
 function Write-ZCCwd {
@@ -37,7 +76,7 @@ function Write-ZCCwd {
         $prefix = $opts.Strings.ReadOnlyPrefix
         $color = $opts.Colors.CwdReadOnly
     }
-    Write-Host "$prefix$p" -NoNewline -Foreground $color
+    Write-ZCHost "$prefix$p" -NoNewline -Color $color
 }
 
 function Write-ZCGitStatus {
@@ -50,7 +89,7 @@ function Write-ZCGitStatus {
         return
     }
 
-    Write-Host $opts.Strings.GitSeparator -NoNewline
+    Write-ZCHost $opts.Strings.GitSeparator -NoNewline
 
     # get status modifiers from local changes
     $modifier = ""
@@ -92,7 +131,7 @@ function Write-ZCGitStatus {
 
     $remote = if ($state.Git.Remote) { ":" + $state.Git.Remote }
     $label = $opts.Strings.GitPrefix + $state.Git.Label
-    Write-Host $label$remote$modifier$suffix -NoNewline -Foreground $color
+    Write-ZCHost $label$remote$modifier$suffix -NoNewline -Color $color
 }
 
 function Write-ZCCaret {
@@ -101,8 +140,10 @@ function Write-ZCCaret {
 
     $color = if ($state.ExitCode -eq 0) { $opts.Colors.Caret } else { $opts.Colors.CaretError }
     $caret = if ($state.IsAdmin) { $opts.Strings.CaretAdmin } else { $opts.Strings.Caret }
+
+    # avoid painting caret background across lines depending on terminal emulator
     Write-Host
-    Write-Host $caret -NoNewline -Foreground $color
+    Write-ZCHost "$caret" -NoNewline -Color $color
 }
 
 function Write-ZcmderPrompt {

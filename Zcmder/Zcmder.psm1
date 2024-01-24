@@ -17,7 +17,7 @@ $prompt_block = {
     $global:ZcmderState.ExitCode = $exit_code
     $global:ZcmderState.IsAdmin = $is_admin
 
-    $prompt = Write-ZcmderPrompt
+    Write-ZcmderPrompt | Out-Null
     $global:LASTEXITCODE = $exit_code
 
     # need to return a string to get the PS> prompt

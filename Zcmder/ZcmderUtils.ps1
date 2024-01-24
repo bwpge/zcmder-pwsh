@@ -78,3 +78,46 @@ function Remove-ZCVariable {
         Remove-Variable -Name $name -Scope Global -EA 0
     }
 }
+
+function Get-ZCConsoleColor {
+    param([string]$value)
+
+    # avoid "partial" matching that .NET does (e.g., "blu" will match "Blue")
+    [enum]::GetValues([System.ConsoleColor]) | %{
+        if ($value -eq $_.ToString()) {
+            return $_
+        }
+    }
+}
+
+function Convert-ZCConsoleTo256Color {
+    param([ConsoleColor]$color)
+
+    # of course windows always has to have some goofy way of doing things.
+    # instead of just using normal X11 colors like "red" and "bright red",
+    # we have to use confusing colors like "DarkGray" to mean "bright black"
+    # and "Gray" to mean "white".
+    # see:
+    #   - https://i.stack.imgur.com/KTSQa.png
+    #   - https://unix.stackexchange.com/a/105578
+    switch ($color) {
+        # standard colors
+        ([ConsoleColor]::Black)       { 0 }
+        ([ConsoleColor]::DarkRed)     { 1 }
+        ([ConsoleColor]::DarkGreen)   { 2 }
+        ([ConsoleColor]::DarkYellow)  { 3 }
+        ([ConsoleColor]::DarkBlue)    { 4 }
+        ([ConsoleColor]::DarkMagenta) { 5 }
+        ([ConsoleColor]::DarkCyan)    { 6 }
+        ([ConsoleColor]::Gray)        { 7 }
+        # high-intensity colors
+        ([ConsoleColor]::DarkGray)    { 8 }
+        ([ConsoleColor]::Red)         { 9 }
+        ([ConsoleColor]::Green)       { 10 }
+        ([ConsoleColor]::Yellow)      { 11 }
+        ([ConsoleColor]::Blue)        { 12 }
+        ([ConsoleColor]::Magenta)     { 13 }
+        ([ConsoleColor]::Cyan)        { 14 }
+        ([ConsoleColor]::White)       { 15 }
+    }
+}

@@ -9,8 +9,9 @@ function Format-ZCPropertyValue {
         "$($value.TotalMilliseconds) ms"
     } elseif ($ty -eq "String") {
         '"' + $value + '"'
-    }
-    else {
+    } elseif ($ty -eq "ZCColor") {
+        "fg=$($value.Foreground), bg=$($value.Background)"
+    } else {
         $value
     }
 }
@@ -27,9 +28,9 @@ function Get-ZCPropertyTable {
         }
 
         $ty = $prop.Value.GetType().Name
-        if ($ty -eq "Hashtable") {
+        if ($ty -eq "Hashtable" -or $ty.StartsWith("Dictionary")) {
             foreach ($item in $prop.Value.GetEnumerator()) {
-                $key = "$k.$($item.Name)"
+                $key = if ($ty -eq "Hashtable") { "$k.$($item.Name)" } else { "$k.$($item.Key)" }
                 $table[$key] = Format-ZCPropertyValue $item.Value
             }
             continue
@@ -109,9 +110,9 @@ function Write-ZcmderDebugInfo {
     Write-ZCDebugHeader "Prompt output"
     Write-Host ">>>>>>>>>>"
     $start = Get-Date
-    Write-ZcmderPrompt
+    Write-ZcmderPrompt | Out-Null
     $info.PromptElapsed = (Get-Date) - $start
-    Write-Host "<<<<<<<<<<`n"
+    Write-Host "`n<<<<<<<<<<`n"
 
     $info.DebugElapsed = (Get-Date) - $begin
 
