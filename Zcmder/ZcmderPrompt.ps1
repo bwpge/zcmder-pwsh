@@ -131,6 +131,8 @@ function Write-ZCGitStatus {
         $opts.Colors.GitUntracked
     } elseif ($state.Git.Modified -gt 0) {
         $opts.Colors.GitModified
+    } elseif ($state.Git.IsNew) {
+        $opts.Colors.GitNewRepo
     } else {
         $opts.Colors.GitBranchDefault
     }

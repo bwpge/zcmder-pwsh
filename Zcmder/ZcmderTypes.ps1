@@ -245,6 +245,7 @@ class ZCGitStatus {
     [string]$Remote = ""
     $Dir = $null
     [bool]$IsRepo = $false
+    [bool]$IsNew = $false
 
     [bool] IsDiverged() {
         return ([bool]$this.Diverged) -or (($this.Ahead -gt 0) -and ($this.Behind -gt 0))

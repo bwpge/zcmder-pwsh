@@ -96,7 +96,7 @@ Git status colors have the following priority:
 - `GitUnmerged`
 - `GitUntracked`
 - `GitModified`
-- `GitRepoNew`
+- `GitNewRepo`
 - `GitBranchDefault`
 
 | Key | Type | Usage |

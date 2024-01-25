@@ -16,17 +16,19 @@ function Set-ZCStateGitStatus {
 
     $state.Git.Dir = Get-ZCGitDir
     $state.Git.IsRepo = [bool]$state.Git.Dir
+    $state.Git.IsNew = $false
 
     if (!$state.Git.IsRepo) { return }
 
     # try and get current git label
     $label = Invoke-ZCGit rev-parse --abbrev-ref HEAD 2>$null
     if ($label -eq "HEAD") {
-        $label = Invoke-ZCGit rev-parse --short HEAD
+        $label = Invoke-ZCGit rev-parse --short HEAD 2>$null
     }
     # check if a new repo
     if ([string]::IsNullOrEmpty($label)) {
-        $label = "(new)"
+        $label = $opts.Strings.GitLabelNew
+        $state.Git.IsNew = $true
     }
     $state.Git.Label = $label
 
