@@ -94,7 +94,7 @@ function Write-ZcmderDebugInfo {
 
     Write-Host
     Write-ZCDebugHeader "Module info"
-    Get-Module -ListAvailable | ?{ $_.Name -eq "Zcmder" } | %{
+    Get-Module | ?{ $_.Name -eq "Zcmder" } | %{
         $mod_info = @{}
         $_ | Select-Object -Property Guid,Name,Version,ModuleBase,Path | %{
             $_.PSObject.Properties |
