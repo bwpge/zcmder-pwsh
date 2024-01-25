@@ -192,7 +192,7 @@ Note that not all terminal emulators support every effect listed. Some terminals
 
 ## Debugging
 
-You can display debug information with the `Write-ZcmderDebugInfo` cmdlet. This is useful if you get a `PS>` prompt (which indicates `$global:prompt` function had error output). The cmdlet will attempt to write the prompt and display error information.
+You can display debug information with the `Write-ZcmderDebugInfo` cmdlet. This is useful if you get a `PS>` prompt (which indicates the `prompt` function had error output). The cmdlet will attempt to write the prompt and display error information.
 
 The output of `Write-ZcmderDebugInfo` is particularly helpful to attach in issues. It will look something like:
 
