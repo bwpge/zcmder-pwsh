@@ -43,6 +43,7 @@ This module uses a global variable `ZcmderOptions` to manage configuration. This
 - [`ZCOptions.Colors`](#zcoptionscolors)
 - [`ZCOptions.Components`](#zcoptionscomponents)
 - [`ZCOptions.Strings`](#zcoptionsstrings)
+- [`ZCOptions.Styles`](#zcoptionsstyles)
 
 When the module is imported by `Import-Module`, the variable is reset to ensure proper initialization. To customize settings, set your desired values *after* calling `Import-Module`.
 
@@ -55,9 +56,10 @@ Set-ZcmderPrompt
 # zcmder options
 $ZcmderOptions.Colors.GitBranchDefault = 'DarkMagenta'  # use magenta for default git branch color
 $ZcmderOptions.Colors.GitNewRepo.Background = '#2277ff'  # use RGB value for new repo bg color
-$ZcmderOptions.Components.PythonEnv = $false  # disable python env prefix
-$ZcmderOptions.Strings.GitSeparator = ' '  # remove ' on ' before git prompt
+$ZcmderOptions.Components.PythonEnv = $false  # disable python env component
+$ZcmderOptions.Strings.GitSeparator = ''  # don't print 'on ' before git prompt
 $ZcmderOptions.Strings.GitPrefix = '■ '  # use different branch icon
+$ZcmderOptions.Styles.Cwd.Underline = $true # use underline effect on cwd component
 ```
 
 The following tables explains each option and usage.
@@ -143,6 +145,48 @@ Controls values or tokens in each component that are printed.
 |`GitStashedModifier`| string | Printed when repo contains stashes |
 |`GitSuffix`| string | Suffix always printed for git status e.g., `)` |
 |`ReadOnlyPrefix`| string | Printed before current working directory when read-only |
+
+### `ZCOptions.Styles`
+
+Controls effects (bold, italic, inverted, etc.) of the various items in the prompt.
+
+A style (`ZCStyle`) contains boolean properties for each supported effect:
+
+- `Bold`: render bold or "intense" text (some terminals render this with "bright" colors and no font weight)
+- `Dim`: render faint text (some terminals treat this as bold)
+- `Italic`: render italicized text (some terminals treat this as inverse or blink effect)
+- `Underline`: render underlined text
+- `Invert`: swap background and foreground colors (this effect may not be supported by all terminals)
+
+Example:
+
+```powershell
+# enable all effects for cwd component
+$ZcmderOptions.Styles.Cwd.Bold = $true
+$ZcmderOptions.Styles.Cwd.Dim = $true
+$ZcmderOptions.Styles.Cwd.Italic = $true
+$ZcmderOptions.Styles.Cwd.Underline = $true
+$ZcmderOptions.Styles.Cwd.Invert = $true
+```
+
+A helper function `New-ZCStyle` is provided to create a style with switches for each effect:
+
+```powershell
+# use underline on caret
+$ZCmderOptions.Styles.Caret = New-ZCStyle -Underline
+# use all effects for cwd component
+$ZcmderOptions.Styles.Cwd = New-ZCStyle -Bold -Dim -Italic -Underline -Invert
+```
+
+| Key | Type | Usage |
+| --- | ---- | ----- |
+| `Caret` | `ZCStyle` | Controls effects for the `Caret` component |
+| `Cwd` | `ZCStyle` | Controls effects for the `Cwd` component |
+| `GitStatus` | `ZCStyle` | Controls effects for the `GitStatus` component |
+| `PythonEnv` | `ZCStyle` | Controls effects for the `PythonEnv` component |
+| `UserAndHost` | `ZCStyle` | Controls effects for both `Username` and `Hostname` components |
+
+Note that not all terminal emulators support every effect listed. Some terminals (e.g., Windows Terminal) require [explicitly adjusting settings](https://learn.microsoft.com/en-us/windows/terminal/customize-settings/profile-appearance#intense-text-formatting) to render certain effects.
 
 ## Debugging
 

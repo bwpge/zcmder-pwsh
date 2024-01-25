@@ -121,3 +121,49 @@ function Convert-ZCConsoleTo256Color {
         ([ConsoleColor]::White)       { 15 }
     }
 }
+
+# the dictionary constructor doesn't handle hashtables, so this function is
+# a hacky way to create one given a key-type and value-type
+function Create-ZCDict {
+    param(
+        [type]$KeyType = [string],
+        [type]$ValueType,
+        [hashtable]$values
+    )
+
+    $dict = New-Object ('System.Collections.Generic.Dictionary[{0}, {1}]' -f $KeyType, $ValueType)
+    foreach ($item in $values.GetEnumerator()) {
+        $dict[$item.Name] = $item.Value
+    }
+    $dict
+}
+
+<#
+.SYNOPSIS
+    Creates a new style.
+.DESCRIPTION
+    Simplifies setting effect flags (bold, italic, etc.) on a style option
+    ($ZcmderOptions.Styles). If a switch is provided, the effect is enabled.
+    Otherwise it is disabled.
+.INPUTS
+    None
+.OUTPUTS
+    ZCStyle
+.EXAMPLE
+    $ZcmderOptions.Styles.Cwd = New-ZCStyle -Bold -Invert
+    Sets cwd component to a style with bold/invert effects.
+.EXAMPLE
+    $ZcmderOptions.Styles.Caret = New-ZCStyle
+    Disable all effects on the caret component.
+#>
+function New-ZCStyle {
+    param(
+        [switch]$Bold,
+        [switch]$Dim,
+        [switch]$Italic,
+        [switch]$Underline,
+        [switch]$Invert
+    )
+
+    [ZCStyle]::new($Bold, $Dim, $Italic, $Underline, $Invert)
+}

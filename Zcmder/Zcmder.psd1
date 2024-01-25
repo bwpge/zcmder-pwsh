@@ -21,7 +21,7 @@ Description = 'A cmder inspired PowerShell theme with git prompt integration.'
 PowerShellVersion = '5.1'
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = @('Set-ZcmderPrompt', 'Write-ZcmderDebugInfo', 'Write-ZCHost')
+FunctionsToExport = @('Set-ZcmderPrompt', 'Write-ZcmderDebugInfo', 'New-ZCStyle')
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()

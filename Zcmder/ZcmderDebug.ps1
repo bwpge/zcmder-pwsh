@@ -12,8 +12,6 @@ function Format-ZCPropertyValue {
         "$($value.TotalMilliseconds) ms"
     } elseif ($ty -eq "String") {
         '"' + $value + '"'
-    } elseif ($ty -eq "ZCColor") {
-        "fg=$($value.Foreground), bg=$($value.Background)"
     } else {
         $value
     }
@@ -72,7 +70,7 @@ function Write-ZCSortedTable {
     $table | %{
         $_.GetEnumerator() |
         Sort-Object -Property Name |
-        Format-Table -AutoSize -HideTableHeaders
+        Format-Table -AutoSize -HideTableHeaders -Wrap
     }
 }
 

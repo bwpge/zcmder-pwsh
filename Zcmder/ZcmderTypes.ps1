@@ -47,12 +47,12 @@ class ZCBaseColor {
         $result = [System.Collections.Generic.List[string]]::new()
         switch ($this.Kind) {
             ([ZCColorType]::Integer) {
-                $result += '5'
-                $result += $this.Value
+                $result.Add('5')
+                $result.Add($this.Value)
             }
             ([ZCColorType]::Rgb) {
-                $result += '2'
-                $result += $this.Value
+                $result.Add('2')
+                $result.AddRange($this.Value)
             }
             default {}
         }
@@ -60,7 +60,7 @@ class ZCBaseColor {
         return $result
     }
 
-    hidden [string] ToString() {
+    [string] ToString() {
         $s = "ZCColor::{0}"
         $result = switch ($this.Kind) {
             ([ZCColorType]::None) { $this.Kind }
@@ -95,6 +95,10 @@ class ZCColor {
         $this.Background = [ZCBaseColor]::new($bg)
     }
 
+    [string] ToString() {
+        return "{fg=$($this.Foreground), bg=$($this.Background)}"
+    }
+
     [string] ToAnsiString() {
         if (!$this.Foreground.Value -and !$this.Background.Value) {
             return ""
@@ -107,11 +111,11 @@ class ZCColor {
 
         if ($this.Foreground) {
             $fg.Add('38')
-            $fg += $this.Foreground.GetAnsiSeq()
+            $fg.AddRange($this.Foreground.GetAnsiSeq())
         }
         if ($this.Background) {
             $bg.Add('48')
-            $bg += $this.Background.GetAnsiSeq()
+            $bg.AddRange($this.Background.GetAnsiSeq())
         }
         $fg = ($ansi_fmt -f ($fg -join ';'))
         $bg = ($ansi_fmt -f ($bg -join ';'))
@@ -120,23 +124,57 @@ class ZCColor {
     }
 }
 
-# the dictionary constructor doesn't take a hashtable with values, so we have
-# to create it here outside the constructor
-function Get-ZCColorDict {
-    $dict = [System.Collections.Generic.Dictionary[String, ZCColor]]::new()
-    $dict.Caret            = "DarkGray"
-    $dict.CaretError       = "DarkRed"
-    $dict.Cwd              = "DarkGreen"
-    $dict.CwdReadOnly      = "DarkRed"
-    $dict.GitBranchDefault = "DarkCyan"
-    $dict.GitModified      = "DarkYellow"
-    $dict.GitNewRepo       = "DarkGray"
-    $dict.GitStaged        = "DarkBlue"
-    $dict.GitUnmerged      = "DarkMagenta"
-    $dict.GitUntracked     = "DarkRed"
-    $dict.PythonEnv        = "DarkGray"
-    $dict.UserAndHost      = "DarkBlue"
-    $dict
+class ZCStyle {
+    [bool]$Bold = $false
+    [bool]$Dim = $false
+    [bool]$Italic = $false
+    [bool]$Underline = $false
+    [bool]$Invert = $false
+
+    ZCStyle() {}
+
+    ZCStyle(
+        [bool]$bold,
+        [bool]$dim,
+        [bool]$italic,
+        [bool]$underline,
+        [bool]$invert
+    ) {
+        $this.Bold = $bold
+        $this.Dim = $dim
+        $this.Italic = $italic
+        $this.Underline = $underline
+        $this.Invert = $invert
+    }
+
+    [string] ToString() {
+        return "{bold=$($this.Bold), dim=$($this.Dim), italic=$($this.Italic), underline=$($this.Underline), invert=$($this.Invert)}"
+    }
+
+    [string] ToAnsiString() {
+        $esc = [char]27
+        $ansi_fmt = "$esc[{0}m"
+        $s = ''
+
+        # invert needs to be first
+        if ($this.Invert) {
+            $s += ($ansi_fmt -f '7')
+        }
+        if ($this.Bold) {
+            $s += ($ansi_fmt -f '1')
+        }
+        if ($this.Dim) {
+            $s += ($ansi_fmt -f '2')
+        }
+        if ($this.Italic) {
+            $s += ($ansi_fmt -f '3')
+        }
+        if ($this.Underline) {
+            $s += ($ansi_fmt -f '4')
+        }
+
+        return $s
+    }
 }
 
 class ZCOptions {
@@ -164,12 +202,33 @@ class ZCOptions {
         GitLabelNew         = "(new)"
         GitPostfix          = ""
         GitPrefix           = " "
-        GitSeparator        = " on "
+        GitSeparator        = "on "
         GitStashedModifier  = " ⚑"
         ReadOnlyPrefix      = " "
     }
 
-    [System.Collections.Generic.Dictionary[String, ZCColor]]$Colors = (Get-ZCColorDict)
+    [System.Collections.Generic.Dictionary[String, ZCColor]]$Colors = (Create-ZCDict -KeyType:([string]) -ValueType:([ZCColor]) @{
+        Caret            = "DarkGray"
+        CaretError       = "DarkRed"
+        Cwd              = "DarkGreen"
+        CwdReadOnly      = "DarkRed"
+        GitBranchDefault = "DarkCyan"
+        GitModified      = "DarkYellow"
+        GitNewRepo       = "DarkGray"
+        GitStaged        = "DarkBlue"
+        GitUnmerged      = "DarkMagenta"
+        GitUntracked     = "DarkRed"
+        PythonEnv        = "DarkGray"
+        UserAndHost      = "DarkBlue"
+    })
+
+    [System.Collections.Generic.Dictionary[String, ZCStyle]]$Styles = (Create-ZCDict -KeyType:([string]) -ValueType:([ZCStyle]) @{
+        Caret = [ZCStyle]::new()
+        Cwd = [ZCStyle]::new()
+        GitStatus = [ZCStyle]::new()
+        PythonEnv = [ZCStyle]::new()
+        UserAndHost = [ZCStyle]::new()
+    })
 }
 
 class ZCGitStatus {

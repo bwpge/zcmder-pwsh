@@ -13,7 +13,11 @@ function Write-ZCHost {
         [System.Object]$Separator,
         [AllowNull()]
         [ZCColor]$Color,
-        [switch]$NoNewline
+        [AllowNull()]
+        [ZCStyle]$Style,
+        [switch]$NoNewline,
+        [System.Object]$Prefix,
+        [System.Object]$Suffix
     )
 
     # see: https://en.wikipedia.org/wiki/ANSI_escape_code
@@ -25,43 +29,45 @@ function Write-ZCHost {
 
     process {
         $PSBoundParameters.Remove("Color")
-        if (!$Color) {
+        $PSBoundParameters.Remove("Style")
+        $PSBoundParameters.Remove("Prefix")
+        $PSBoundParameters.Remove("Suffix")
+        if (!$Color -and !$Style) {
             Write-Host @PSBoundParameters
             return
         }
         $PSBoundParameters.Remove("Object")
-        $seq = $Color.ToAnsiString()
 
-        Write-Host "$seq$Object$reset" @PSBoundParameters
+        $c = if ($Color) { $Color.ToAnsiString() } else { "" }
+        $s = if ($Style) { $Style.ToAnsiString() } else { "" }
+        Write-Host "$Prefix$s$c$Object$reset$Suffix" @PSBoundParameters
     }
 }
 
 function Write-ZCPythonEnv {
-    $color = $global:ZcmderOptions.Colors.PythonEnv
     $py = if (Test-Path env:CONDA_PROMPT_MODIFIER) {
         ($env:CONDA_PROMPT_MODIFIER).Trim()
     } elseif (Test-Path env:VIRTUAL_ENV) {
         "($($(Get-Item $env:VIRTUAL_ENV).Basename))"
     }
     if ($py) {
-        Write-ZCHost "$py " -NoNewline -Color $color
+        $color = $global:ZcmderOptions.Colors.PythonEnv
+        $style = $global:ZcmderOptions.Styles.PythonEnv
+        Write-ZCHost "$py" -NoNewline -Color $color -Style $style -Suffix ' '
     }
 }
 
-function Write-ZCUsername {
-    $sp = ""
-    if (!$global:ZcmderOptions.Components.Hostname) {
-        $sp = " "
+function Write-ZCUserAndHost {
+    $opts = $global:ZcmderOptions
+    $values = [System.Collections.Generic.List[string]]::new()
+    if ($opts.Components.Username) {
+        $values.Add($env:USERNAME)
     }
-    Write-ZCHost $env:USERNAME$sp -NoNewline -Color $global:ZcmderOptions.Colors.UserAndHost
-}
-
-function Write-ZCHostname {
-    $sep = ""
-    if ($global:ZcmderOptions.Components.Username) {
-        $sep = "@"
+    if ($opts.Components.Hostname) {
+        $values.Add($env:COMPUTERNAME)
     }
-    Write-ZCHost "$sep$env:COMPUTERNAME " -NoNewline -Color $global:ZcmderOptions.Colors.UserAndHost
+    $s = ($values -join '@')
+    Write-ZCHost $s -NoNewline -Color $opts.Colors.UserAndHost -Style $opts.Styles.UserAndHost -Suffix ' '
 }
 
 function Write-ZCCwd {
@@ -71,11 +77,12 @@ function Write-ZCCwd {
 
     $prefix = ""
     $color = $global:ZcmderOptions.Colors.Cwd
+    $style = $global:ZcmderOptions.Styles.Cwd
     if (!$global:ZcmderState.IsAdmin -and (Test-IsReadOnlyDir $path)) {
         $prefix = $opts.Strings.ReadOnlyPrefix
         $color = $opts.Colors.CwdReadOnly
     }
-    Write-ZCHost "$prefix$p" -NoNewline -Color $color
+    Write-ZCHost "$prefix$p" -NoNewline -Color $color -Style $style -Suffix ' '
 }
 
 function Write-ZCGitStatus {
@@ -130,7 +137,8 @@ function Write-ZCGitStatus {
 
     $remote = if ($state.Git.Remote) { ":" + $state.Git.Remote }
     $label = $opts.Strings.GitPrefix + $state.Git.Label
-    Write-ZCHost $label$remote$modifier$suffix -NoNewline -Color $color
+    $style = $opts.Styles.GitStatus
+    Write-ZCHost $label$remote$modifier$suffix -NoNewline -Color $color -Style $style
 }
 
 function Write-ZCCaret {
@@ -138,11 +146,12 @@ function Write-ZCCaret {
     $opts = $global:ZcmderOptions
 
     $color = if ($state.ExitCode -eq 0) { $opts.Colors.Caret } else { $opts.Colors.CaretError }
+    $style = $opts.Styles.Caret
     $caret = if ($state.IsAdmin) { $opts.Strings.CaretAdmin } else { $opts.Strings.Caret }
 
     # avoid painting caret background across lines depending on terminal emulator
     Write-Host
-    Write-ZCHost "$caret" -NoNewline -Color $color
+    Write-ZCHost "$caret" -NoNewline -Color $color -Style $style
 }
 
 function Write-ZcmderPrompt {
@@ -159,11 +168,8 @@ function Write-ZcmderPrompt {
     if ($opts.Components.PythonEnv) {
         Write-ZCPythonEnv
     }
-    if ($opts.Components.Username) {
-        Write-ZCUsername
-    }
-    if ($opts.Components.Hostname) {
-        Write-ZCHostname
+    if ($opts.Components.Username -or $opts.Components.Hostname) {
+        Write-ZCUserAndHost
     }
     if ($opts.Components.Cwd) {
         Write-ZCCwd
