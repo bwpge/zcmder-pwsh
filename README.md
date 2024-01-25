@@ -4,6 +4,8 @@ A PowerShell port of my [zcmder](https://github.com/bwpge/zcmder) theme for `zsh
 
 A lot of this module's implementation uses the great work done by the authors of [posh-git](https://github.com/dahlbyk/posh-git).
 
+<p align="center"><img src="assets/preview.png"></p>
+
 ## Requirements
 
 This module requires a minimum version of PowerShell 5.1 (a fresh install of Windows 10/11 should come with 5.1).
