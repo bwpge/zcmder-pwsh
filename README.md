@@ -72,7 +72,6 @@ Controls general behavior of the prompt.
 
 | Key | Type | Usage |
 | --- | ---- | ----- |
-| `DeferPromptWrite` | bool | Defers writing the prompt until all components update. This will avoid choppy printing on new prompts, but may make the prompt feel sluggish in git repositories. Not recommended. |
 | `GitShowRemote` | bool | Show the remote with git status (e.g., `main:origin/main`) |
 | `NewlineBeforePrompt` | bool | Print an empty line before the next prompt (excluding the first prompt) |
 | `UnixPathStyle` | bool | Does some naive string manipulation on the current working directory component to print Unix-style paths. This is purely aesthetic and does not affect anything in the shell. |

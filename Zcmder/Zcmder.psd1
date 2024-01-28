@@ -3,7 +3,7 @@
 RootModule = 'Zcmder.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.2.2'
+ModuleVersion = '0.2.3'
 
 # ID used to uniquely identify this module
 GUID = '2f55cab3-5190-4291-839a-4f45b5ae19b2'

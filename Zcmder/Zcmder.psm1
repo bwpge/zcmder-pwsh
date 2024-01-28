@@ -1,3 +1,8 @@
+# the module requires ANSI escape sequences, check support
+if (!$Host.UI.SupportsVirtualTerminal) {
+    throw 'Zcmder requires support for ANSI escape sequences to render prompts correctly, but `$Host.UI.SupportsVirtualTerminal` was False. See: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_ansi_terminals for more information.'
+}
+
 . $PSScriptRoot\ZcmderTypes.ps1
 . $PSScriptRoot\ZcmderGit.ps1
 . $PSScriptRoot\ZcmderPrompt.ps1
@@ -8,7 +13,6 @@ $default_prompt = Get-ZCCurrentPrompt
 $is_admin = Test-ZCIsAdmin
 
 Remove-ZCVariable ZcmderOptions
-Remove-ZCVariable ZcmderState
 $global:ZcmderOptions = [ZCOptions]::new()
 
 $prompt_block = {
@@ -16,12 +20,10 @@ $prompt_block = {
     # needs to do things in convoluted and confusing ways
     $dollar_q = $global:?
     $exit_code = $global:LASTEXITCODE
-
-    Write-ZcmderPrompt -IsAdmin:$is_admin -ExitCode:$exit_code -DollarQ:$dollar_q | Out-Null
+    $text = Get-ZcmderPrompt -IsAdmin:$is_admin -ExitCode:$exit_code -DollarQ:$dollar_q
     $global:LASTEXITCODE = $exit_code
 
-    # need to return a string to avoid the PS> prompt
-    " "
+    $text
 }
 
 <#

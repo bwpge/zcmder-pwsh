@@ -109,16 +109,16 @@ class ZCColor {
         $fg = [System.Collections.Generic.List[string]]::new()
         $bg = [System.Collections.Generic.List[string]]::new()
 
-        if ($this.Foreground) {
+        if ($this.Foreground -and $this.Foreground.Kind -ne [ZCColorType]::None) {
             $fg.Add('38')
             $fg.AddRange($this.Foreground.GetAnsiSeq())
         }
-        if ($this.Background) {
+        if ($this.Background -and $this.Background.Kind -ne [ZCColorType]::None) {
             $bg.Add('48')
             $bg.AddRange($this.Background.GetAnsiSeq())
         }
-        $fg = ($ansi_fmt -f ($fg -join ';'))
-        $bg = ($ansi_fmt -f ($bg -join ';'))
+        $fg = if ($fg) { ($ansi_fmt -f ($fg -join ';')) } else { "" }
+        $bg = if ($bg) { ($ansi_fmt -f ($bg -join ';')) } else { "" }
 
         return "$fg$bg"
     }
@@ -178,7 +178,6 @@ class ZCStyle {
 }
 
 class ZCOptions {
-    [bool]$DeferPromptWrite = $false
     [bool]$GitShowRemote = $false
     [bool]$NewlineBeforePrompt = $true
     [bool]$UnixPathStyle = $true
@@ -207,7 +206,7 @@ class ZCOptions {
         ReadOnlyPrefix      = " "
     }
 
-    [System.Collections.Generic.Dictionary[String, ZCColor]]$Colors = (Create-ZCDict -KeyType:([string]) -ValueType:([ZCColor]) @{
+    [System.Collections.Generic.Dictionary[String, ZCColor]]$Colors = (New-ZCDict -KeyType:([string]) -ValueType:([ZCColor]) @{
         Caret            = "DarkGray"
         CaretError       = "DarkRed"
         Cwd              = "DarkGreen"
@@ -222,7 +221,7 @@ class ZCOptions {
         UserAndHost      = "DarkBlue"
     })
 
-    [System.Collections.Generic.Dictionary[String, ZCStyle]]$Styles = (Create-ZCDict -KeyType:([string]) -ValueType:([ZCStyle]) @{
+    [System.Collections.Generic.Dictionary[String, ZCStyle]]$Styles = (New-ZCDict -KeyType:([string]) -ValueType:([ZCStyle]) @{
         Caret = [ZCStyle]::new()
         Cwd = [ZCStyle]::new()
         GitStatus = [ZCStyle]::new()

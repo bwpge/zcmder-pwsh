@@ -108,9 +108,10 @@ function Write-ZcmderDebugInfo {
     Write-ZCDebugHeader "Prompt output"
     Write-Host "`n>>>>>>>>>>"
     $start = Get-Date
-    Write-ZcmderPrompt -IsAdmin:$is_admin -ExitCode:$exit_code -DollarQ:$dollar_q | Out-Null
-    $times["Total prompt time"] = (Get-Date) - $start
-    Write-Host "`n<<<<<<<<<<`n"
+    $text = (Get-ZcmderPrompt -IsAdmin:$is_admin -ExitCode:$exit_code -DollarQ:$dollar_q) -replace ([char]27),'\x1b'
+    $times["Prompt render time"] = (Get-Date) - $start
+    Write-Host $text
+    Write-Host "<<<<<<<<<<`n"
 
     Write-ZCDebugHeader "Git Status"
     $start = Get-Date

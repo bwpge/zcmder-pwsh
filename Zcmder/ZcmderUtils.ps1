@@ -124,7 +124,7 @@ function Convert-ZCConsoleTo256Color {
 
 # the dictionary constructor doesn't handle hashtables, so this function is
 # a hacky way to create one given a key-type and value-type
-function Create-ZCDict {
+function New-ZCDict {
     param(
         [type]$KeyType = [string],
         [type]$ValueType,

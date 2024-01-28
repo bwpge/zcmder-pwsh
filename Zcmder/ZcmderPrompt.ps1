@@ -1,7 +1,6 @@
 # this function uses beatcracker/Powershell-Misc as a reference for implementation
 # see: https://github.com/beatcracker/Powershell-Misc/blob/master/Write-Host.ps1
-function Write-ZCHost {
-    [CmdletBinding()]
+function New-ZCAnsiString {
     param(
         [Parameter(
             Position=0,
@@ -10,7 +9,6 @@ function Write-ZCHost {
         )]
         [Alias('Msg', 'Message')]
         [System.Object[]]$Object,
-        [System.Object]$Separator,
         [AllowNull()]
         [ZCColor]$Color,
         [AllowNull()]
@@ -20,31 +18,23 @@ function Write-ZCHost {
         [System.Object]$Suffix
     )
 
-    # see: https://en.wikipedia.org/wiki/ANSI_escape_code
     begin {
         $esc = [char]27
-        $ansi_fmt = "$esc[{0}m"
-        $reset = $ansi_fmt -f '0'
+        $reset = "$esc[0m"
     }
 
     process {
-        $PSBoundParameters.Remove("Color")
-        $PSBoundParameters.Remove("Style")
-        $PSBoundParameters.Remove("Prefix")
-        $PSBoundParameters.Remove("Suffix")
-        if (!$Color -and !$Style) {
-            Write-Host @PSBoundParameters
-            return
+        if (!$Host.UI.SupportsVirtualTerminal -or (!$Color -and !$Style)) {
+            "$Prefix$Object$Suffix"
+        } else {
+            $c = if ($Color) { $Color.ToAnsiString() } else { "" }
+            $s = if ($Style) { $Style.ToAnsiString() } else { "" }
+            "$Prefix$s$c$Object$reset$Suffix"
         }
-        $PSBoundParameters.Remove("Object")
-
-        $c = if ($Color) { $Color.ToAnsiString() } else { "" }
-        $s = if ($Style) { $Style.ToAnsiString() } else { "" }
-        Write-Host "$Prefix$s$c$Object$reset$Suffix" @PSBoundParameters
     }
 }
 
-function Write-ZCPythonEnv {
+function Get-ZCPythonEnv {
     $py = if (Test-Path env:CONDA_PROMPT_MODIFIER) {
         ($env:CONDA_PROMPT_MODIFIER).Trim()
     } elseif (Test-Path env:VIRTUAL_ENV) {
@@ -53,11 +43,14 @@ function Write-ZCPythonEnv {
     if ($py) {
         $color = $global:ZcmderOptions.Colors.PythonEnv
         $style = $global:ZcmderOptions.Styles.PythonEnv
-        Write-ZCHost "$py" -NoNewline -Color $color -Style $style -Suffix ' '
+        New-ZCAnsiString "$py" -Color $color -Style $style -Suffix ' '
+    }
+    else {
+        ""
     }
 }
 
-function Write-ZCUserAndHost {
+function Get-ZCUserAndHost {
     $opts = $global:ZcmderOptions
     $values = [System.Collections.Generic.List[string]]::new()
     if ($opts.Components.Username) {
@@ -67,10 +60,10 @@ function Write-ZCUserAndHost {
         $values.Add($env:COMPUTERNAME)
     }
     $s = ($values -join '@')
-    Write-ZCHost $s -NoNewline -Color $opts.Colors.UserAndHost -Style $opts.Styles.UserAndHost -Suffix ' '
+    New-ZCAnsiString $s -Color $opts.Colors.UserAndHost -Style $opts.Styles.UserAndHost -Suffix ' '
 }
 
-function Write-ZCCwd {
+function Get-ZCCwd {
     param(
         [Parameter(Mandatory = $true)]
         [bool]$IsAdmin
@@ -87,21 +80,19 @@ function Write-ZCCwd {
         $prefix = $opts.Strings.ReadOnlyPrefix
         $color = $opts.Colors.CwdReadOnly
     }
-    Write-ZCHost "$prefix$p" -NoNewline -Color $color -Style $style -Suffix ' '
+    New-ZCAnsiString "$prefix$p" -Color $color -Style $style -Suffix ' '
 }
 
-function Write-ZCGitStatus {
+function Get-ZCGitPrompt {
     param(
         [Parameter(Position = 0, Mandatory = $true)]
         [ZCGitStatus]$GitStatus
     )
 
-    $opts = $global:ZcmderOptions
     if (!$GitStatus.IsRepo) {
-        return
+        return ""
     }
-
-    Write-ZCHost $opts.Strings.GitSeparator -NoNewline
+    $opts = $global:ZcmderOptions
 
     # get status modifiers from local changes
     $modifier = ""
@@ -146,10 +137,10 @@ function Write-ZCGitStatus {
     $remote = if ($GitStatus.Remote) { ":" + $GitStatus.Remote }
     $label = $opts.Strings.GitPrefix + $GitStatus.Label
     $style = $opts.Styles.GitStatus
-    Write-ZCHost $label$remote$modifier$suffix -NoNewline -Color $color -Style $style
+    New-ZCAnsiString $label$remote$modifier$suffix -NoNewline -Color $color -Style $style -Prefix $opts.Strings.GitSeparator
 }
 
-function Write-ZCCaret {
+function Get-ZCCaret {
     param(
         [Parameter(Mandatory = $true)]
         [bool]$IsAdmin,
@@ -170,12 +161,10 @@ function Write-ZCCaret {
     $style = $opts.Styles.Caret
     $caret = if ($IsAdmin) { $opts.Strings.CaretAdmin } else { $opts.Strings.Caret }
 
-    # avoid rendering caret background across lines depending on terminal emulator
-    Write-Host
-    Write-ZCHost "$caret" -NoNewline -Color $color -Style $style
+    New-ZCAnsiString $caret -Color $color -Style $style -Prefix "`n" -Suffix ' '
 }
 
-function Write-ZcmderPrompt {
+function Get-ZcmderPrompt {
     param(
         [Parameter(Mandatory = $true)]
         [bool]$IsAdmin,
@@ -186,30 +175,23 @@ function Write-ZcmderPrompt {
     )
 
     $opts = $global:ZcmderOptions
-    $git_status = $null
+    $sb = [System.Text.StringBuilder]::new()
 
-    # if set, update git status first to avoid choppy printing
-    if ($opts.DeferPromptWrite -and $opts.Components.GitStatus) {
-        $git_status = Get-ZCGitStatus
-    }
-    # new line before prompt if not at top row
     if ($opts.NewlineBeforePrompt -and !$Host.UI.RawUI.CursorPosition.Y -eq 0) {
-        Write-Host
+        [void]$sb.Append("`n")
     }
     if ($opts.Components.PythonEnv) {
-        Write-ZCPythonEnv
+        [void]$sb.Append((Get-ZCPythonEnv))
     }
     if ($opts.Components.Username -or $opts.Components.Hostname) {
-        Write-ZCUserAndHost
+        [void]$sb.Append((Get-ZCUserAndHost))
     }
     if ($opts.Components.Cwd) {
-        Write-ZCCwd -IsAdmin:$IsAdmin
+        [void]$sb.Append((Get-ZCCwd -IsAdmin:$IsAdmin))
     }
     if ($opts.Components.GitStatus) {
-        if (!$git_status) {
-            $git_status = Get-ZCGitStatus
-        }
-        Write-ZCGitStatus $git_status
+        [void]$sb.Append((Get-ZCGitPrompt (Get-ZCGitStatus)))
     }
-    Write-ZCCaret -IsAdmin:$IsAdmin -ExitCode:$ExitCode -DollarQ:$DollarQ
+    [void]$sb.Append((Get-ZCCaret -IsAdmin:$IsAdmin -ExitCode:$ExitCode -DollarQ:$DollarQ))
+    $sb.ToString()
 }
