@@ -203,7 +203,7 @@ Guid       2f55cab3-5190-4291-839a-4f45b5ae19b2
 ModuleBase C:\Users\user\Documents\PowerShell\Modules\Zcmder
 Name       Zcmder
 Path       C:\Users\user\Documents\PowerShell\Modules\Zcmder\Zcmder.psm1
-Version    0.2.2
+Version    0.2.3
 
 
 PROMPT OUTPUT
@@ -211,15 +211,26 @@ PROMPT OUTPUT
 
 >>>>>>>>>>
 
-~
-λ
+\x1b[38;5;2m~/sample-repo\x1b[0m on \x1b[38;5;8m (new)\x1b[0m
+\x1b[38;5;8mλ\x1b[0m
 <<<<<<<<<<
 
 GIT STATUS
 ----------
 
 Ahead     0
-...
+Behind    0
+Changes   0
+Dir       C:\Users\user\sample-repo\.git
+Diverged  0
+IsNew     True
+IsRepo    True
+Label     "(new)"
+Modified  0
+Remote    ""
+Staged    0
+Stashed   0
+Unmerged  0
 Untracked 0
 
 OPTIONS
@@ -232,8 +243,13 @@ UnixPathStyle              True
 STATS
 -----
 
-Parse git status time 21.6787 ms
-Total prompt time     58.6919 ms
+Parse git status                103.7931 ms
+Render component: caret         0.9889 ms
+Render component: cwd           29.7986 ms
+Render component: git status    19.8342 ms
+Render component: python env    0.6766 ms
+Render component: user and host 2.4411 ms
+Render full prompt              136.6042 ms
 ```
 
 You may want to sanitize your username if it is captured in the output.

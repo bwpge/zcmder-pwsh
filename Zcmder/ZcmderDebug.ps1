@@ -1,3 +1,16 @@
+function Measure-ZCCommandWithOutput {
+    param([scriptblock]$Block)
+
+    $start = Get-Date
+    $output = $Block.Invoke()
+    $elapsed = (Get-Date) - $start
+
+    @{
+        Elapsed = $elapsed.TotalMilliseconds
+        Output = $output
+    }
+}
+
 function Format-ZCPropertyValue {
     param($value, $ty)
 
@@ -106,25 +119,33 @@ function Write-ZcmderDebugInfo {
     }
 
     Write-ZCDebugHeader "Prompt output"
+    $prompt_cmd = Measure-ZCCommandWithOutput { Get-ZcmderPrompt -IsAdmin:$is_admin -ExitCode:$exit_code -DollarQ:$dollar_q }
+    $times["Render full prompt"] = $prompt_cmd.Elapsed
     Write-Host "`n>>>>>>>>>>"
-    $start = Get-Date
-    $text = (Get-ZcmderPrompt -IsAdmin:$is_admin -ExitCode:$exit_code -DollarQ:$dollar_q) -replace ([char]27),'\x1b'
-    $times["Prompt render time"] = (Get-Date) - $start
-    Write-Host $text
+    Write-Host ($prompt_cmd.Output  -replace ([char]27),'\x1b')
     Write-Host "<<<<<<<<<<`n"
 
     Write-ZCDebugHeader "Git Status"
-    $start = Get-Date
-    $git_status = Get-ZCGitStatus
-    $times["Parse git status time"] = (Get-Date) - $start
-    Write-ZCSortedTable (Get-ZCPropertyTable $git_status)
+    $git_status_cmd = Measure-ZCCommandWithOutput { Get-ZCGitStatus }
+    $times["Parse git status"] = $git_status_cmd.Elapsed
+    Write-ZCSortedTable (Get-ZCPropertyTable $git_status_cmd.Output[0])
 
     Write-ZCDebugHeader "Options"
     $table = Merge-ZCPropertyTables (Get-ZCPropertyTable $global:ZcmderOptions)
     Write-ZCSortedTable $table
 
+    $commands = @{
+        "Render component: python env" = { Get-ZCPythonEnv }
+        "Render component: user and host" = { Get-ZCUserAndHost }
+        "Render component: cwd" = { Get-ZCCwd -IsAdmin:$is_admin }
+        "Render component: git status" = { Get-ZCGitPrompt -GitStatus:$git_status_cmd.Output[0] }
+        "Render component: caret" = { Get-ZCCaret -IsAdmin:$is_admin -ExitCode:$exit_code -DollarQ:$dollar_q }
+    }
+    foreach ($item in $commands.GetEnumerator()) {
+        $times[$item.Name] = (Measure-ZCCommandWithOutput $item.Value).Elapsed
+    }
     Write-ZCDebugHeader "Stats"
-    Write-ZCSortedTable $times -Property Name, @{label = "Elapsed"; e = {"$($_.Value.TotalMilliseconds) ms" }}
+    Write-ZCSortedTable $times -Property Name, @{label = "Elapsed"; e = {"$($_.Value) ms" }}
 
     $global:LASTEXITCODE = $exit_code
 }
