@@ -35,7 +35,7 @@ function Get-ZCPropertyTable {
                 $table[$key] = Format-ZCPropertyValue $item.Value
             }
             continue
-        } elseif (($ty -eq "ZCOptions") -or ($ty -eq "ZCState") -or ($ty -eq "ZCGitStatus")) {
+        } elseif ($ty -eq "ZCOptions" -or $ty -eq "ZCGitStatus") {
             Get-ZCPropertyTable $prop.Value $k
             continue
         }
@@ -65,12 +65,15 @@ function Merge-ZCPropertyTables {
 }
 
 function Write-ZCSortedTable {
-    param([hashtable]$table)
+    param(
+        [hashtable]$table,
+        $Property=$null
+    )
 
     $table | %{
         $_.GetEnumerator() |
         Sort-Object -Property Name |
-        Format-Table -AutoSize -HideTableHeaders -Wrap
+        Format-Table -AutoSize -HideTableHeaders -Wrap -Property:$Property
     }
 }
 
@@ -85,42 +88,42 @@ function Write-ZcmderDebugInfo {
     [CmdletBinding()]
     param()
 
+    $dollar_q = $global:?
     $exit_code = $global:LASTEXITCODE
-
-    $begin = Get-Date
-    $info = [ZCDebugInfo]::new()
-    $info.Options = $global:ZcmderOptions
-    $info.State = $global:ZcmderState
+    $is_admin = Test-ZCIsAdmin
+    $times = @{}
 
     Write-Host
     Write-ZCDebugHeader "Module info"
     Get-Module | ?{ $_.Name -eq "Zcmder" } | %{
-        $mod_info = @{}
+        $info = @{}
         $_ | Select-Object -Property Guid,Name,Version,ModuleBase,Path | %{
             $_.PSObject.Properties |
-            %{ $mod_info[$_.Name] = $_.Value }
+            %{ $info[$_.Name] = $_.Value }
         }
-        Write-ZCSortedTable $mod_info
+        Write-ZCSortedTable $info
         Write-Host
     }
 
-    $start = Get-Date
-    Set-ZCStateGitStatus
-    $info.GitStatusUpdate = (Get-Date) - $start
-
     Write-ZCDebugHeader "Prompt output"
-    Write-Host ">>>>>>>>>>"
+    Write-Host "`n>>>>>>>>>>"
     $start = Get-Date
-    Write-ZcmderPrompt | Out-Null
-    $info.PromptElapsed = (Get-Date) - $start
+    Write-ZcmderPrompt -IsAdmin:$is_admin -ExitCode:$exit_code -DollarQ:$dollar_q | Out-Null
+    $times["Total prompt time"] = (Get-Date) - $start
     Write-Host "`n<<<<<<<<<<`n"
 
-    $info.DebugElapsed = (Get-Date) - $begin
+    Write-ZCDebugHeader "Git Status"
+    $start = Get-Date
+    $git_status = Get-ZCGitStatus
+    $times["Parse git status time"] = (Get-Date) - $start
+    Write-ZCSortedTable (Get-ZCPropertyTable $git_status)
 
-    Write-ZCDebugHeader "Debug info"
-    $table = Merge-ZCPropertyTables (Get-ZCPropertyTable $info)
+    Write-ZCDebugHeader "Options"
+    $table = Merge-ZCPropertyTables (Get-ZCPropertyTable $global:ZcmderOptions)
     Write-ZCSortedTable $table
 
+    Write-ZCDebugHeader "Stats"
+    Write-ZCSortedTable $times -Property Name, @{label = "Elapsed"; e = {"$($_.Value.TotalMilliseconds) ms" }}
+
     $global:LASTEXITCODE = $exit_code
-    $global:ZcmderState.ExitCode = $exit_code
 }

@@ -251,17 +251,3 @@ class ZCGitStatus {
         return ([bool]$this.Diverged) -or (($this.Ahead -gt 0) -and ($this.Behind -gt 0))
     }
 }
-
-class ZCState {
-    $ExitCode = 0
-    $IsAdmin = $false
-    [ZCGitStatus]$Git = [ZCGitStatus]::new()
-}
-
-class ZCDebugInfo {
-    [ZCOptions]$Options
-    [ZCState]$State
-    [TimeSpan]$GitStatusUpdate
-    [TimeSpan]$PromptElapsed
-    [TimeSpan]$DebugElapsed
-}

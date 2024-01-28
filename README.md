@@ -194,7 +194,7 @@ Note that not all terminal emulators support every effect listed. Some terminals
 
 You can display debug information with the `Write-ZcmderDebugInfo` cmdlet. This is useful if you get a `PS>` prompt (which indicates the `prompt` function had error output). The cmdlet will attempt to write the prompt and display error information.
 
-The output of `Write-ZcmderDebugInfo` is particularly helpful to attach in issues. It will look something like:
+The output of `Write-ZcmderDebugInfo` is particularly helpful to attach in issues:
 
 ```
 MODULE INFO
@@ -203,25 +203,38 @@ MODULE INFO
 Guid       2f55cab3-5190-4291-839a-4f45b5ae19b2
 ModuleBase C:\Users\user\Documents\PowerShell\Modules\Zcmder
 Name       Zcmder
-Path       C:\Users\user\Documents\PowerShell\Modules\Zcmder\Zcmder.psd1
-Version    x.y.z
+Path       C:\Users\user\Documents\PowerShell\Modules\Zcmder\Zcmder.psm1
+Version    0.2.2
 
 
 PROMPT OUTPUT
 -------------
+
 >>>>>>>>>>
 
 ~
 λ
 <<<<<<<<<<
 
-DEBUG INFO
+GIT STATUS
 ----------
 
-(...truncated for brevity...)
-Times.DebugElapsed                 564.7499 ms
-Times.GitStatusUpdate              19.8973 ms
-Times.PromptElapsed                52.3646 ms
+Ahead     0
+...
+Untracked 0
+
+OPTIONS
+-------
+
+Colors.Caret               {fg=Integer(8), bg=None}
+...
+UnixPathStyle              True
+
+STATS
+-----
+
+Parse git status time 21.6787 ms
+Total prompt time     58.6919 ms
 ```
 
-Note, you may want to sanitize your username if it is captured in the `ModuleBase` or `Path` values.
+You may want to sanitize your username if it is captured in the output.

@@ -71,6 +71,11 @@ function Write-ZCUserAndHost {
 }
 
 function Write-ZCCwd {
+    param(
+        [Parameter(Mandatory = $true)]
+        [bool]$IsAdmin
+    )
+
     $opts = $global:ZcmderOptions
     $path = $ExecutionContext.SessionState.Path.CurrentLocation
     $p = Write-ZCPath $path
@@ -78,7 +83,7 @@ function Write-ZCCwd {
     $prefix = ""
     $color = $global:ZcmderOptions.Colors.Cwd
     $style = $global:ZcmderOptions.Styles.Cwd
-    if (!$global:ZcmderState.IsAdmin -and (Test-IsReadOnlyDir $path)) {
+    if (!$IsAdmin -and (Test-IsReadOnlyDir $path)) {
         $prefix = $opts.Strings.ReadOnlyPrefix
         $color = $opts.Colors.CwdReadOnly
     }
@@ -86,12 +91,13 @@ function Write-ZCCwd {
 }
 
 function Write-ZCGitStatus {
-    # NOTE: Set-ZCStateGitStatus must be called first for this to be accurate
+    param(
+        [Parameter(Position = 0, Mandatory = $true)]
+        [ZCGitStatus]$GitStatus
+    )
 
     $opts = $global:ZcmderOptions
-    $state = $global:ZcmderState
-
-    if (!$state.Git.IsRepo) {
+    if (!$GitStatus.IsRepo) {
         return
     }
 
@@ -99,69 +105,92 @@ function Write-ZCGitStatus {
 
     # get status modifiers from local changes
     $modifier = ""
-    if ($state.Git.Changes) {
+    if ($GitStatus.Changes) {
         $modifier += $opts.Strings.GitDirtyPostfix
     }
     # otherwise repo is clean, but don't show if in a new repo
-    elseif ($state.Git.Label -ne $opts.Strings.GitLabelNew) {
+    elseif ($GitStatus.Label -ne $opts.Strings.GitLabelNew) {
         $modifier = $opts.Strings.GitCleanPostfix
     }
     # add stashed modifier
-    if ($state.Git.Stashed) {
+    if ($GitStatus.Stashed) {
         $modifier += $opts.Strings.GitStashedModifier
     }
 
     # branch suffix from remote status
-    $diverged = $state.Git.IsDiverged()
+    $diverged = $GitStatus.IsDiverged()
     $suffix = ""
     if ($diverged) {
         $suffix = $opts.Strings.GitDivergedPostfix
-    } elseif ($state.Git.Ahead) {
+    } elseif ($GitStatus.Ahead) {
         $suffix = $opts.Strings.GitAheadPostfix
-    } elseif ($state.Git.Behind) {
+    } elseif ($GitStatus.Behind) {
         $suffix = $opts.Strings.GitBehindPostfix
     }
 
     # get color based on local or remote
-    $color = if ($state.Git.Changes -and ($state.Git.Changes -eq $state.Git.Staged)) {
+    $color = if ($GitStatus.Changes -and ($GitStatus.Changes -eq $GitStatus.Staged)) {
         $opts.Colors.GitStaged
-    } elseif ($state.Git.Unmerged -or $diverged) {
+    } elseif ($GitStatus.Unmerged -or $diverged) {
         $opts.Colors.GitUnmerged
-    } elseif ($state.Git.Untracked -gt 0) {
+    } elseif ($GitStatus.Untracked -gt 0) {
         $opts.Colors.GitUntracked
-    } elseif ($state.Git.Modified -gt 0) {
+    } elseif ($GitStatus.Modified -gt 0) {
         $opts.Colors.GitModified
-    } elseif ($state.Git.IsNew) {
+    } elseif ($GitStatus.IsNew) {
         $opts.Colors.GitNewRepo
     } else {
         $opts.Colors.GitBranchDefault
     }
 
-    $remote = if ($state.Git.Remote) { ":" + $state.Git.Remote }
-    $label = $opts.Strings.GitPrefix + $state.Git.Label
+    $remote = if ($GitStatus.Remote) { ":" + $GitStatus.Remote }
+    $label = $opts.Strings.GitPrefix + $GitStatus.Label
     $style = $opts.Styles.GitStatus
     Write-ZCHost $label$remote$modifier$suffix -NoNewline -Color $color -Style $style
 }
 
 function Write-ZCCaret {
-    $state = $global:ZcmderState
+    param(
+        [Parameter(Mandatory = $true)]
+        [bool]$IsAdmin,
+        [Parameter(Mandatory = $true)]
+        [int]$ExitCode,
+        [Parameter(Mandatory = $true)]
+        [bool]$DollarQ
+    )
+
     $opts = $global:ZcmderOptions
 
-    $color = if ($state.ExitCode -eq 0) { $opts.Colors.Caret } else { $opts.Colors.CaretError }
+    # consider exit code (set by processes) and $? (set by cmdlets)
+    $color = if ($ExitCode -eq 0 -and $DollarQ) {
+        $opts.Colors.Caret
+    } else {
+        $opts.Colors.CaretError
+    }
     $style = $opts.Styles.Caret
-    $caret = if ($state.IsAdmin) { $opts.Strings.CaretAdmin } else { $opts.Strings.Caret }
+    $caret = if ($IsAdmin) { $opts.Strings.CaretAdmin } else { $opts.Strings.Caret }
 
-    # avoid painting caret background across lines depending on terminal emulator
+    # avoid rendering caret background across lines depending on terminal emulator
     Write-Host
     Write-ZCHost "$caret" -NoNewline -Color $color -Style $style
 }
 
 function Write-ZcmderPrompt {
+    param(
+        [Parameter(Mandatory = $true)]
+        [bool]$IsAdmin,
+        [Parameter(Mandatory = $true)]
+        [int]$ExitCode,
+        [Parameter(Mandatory = $true)]
+        [bool]$DollarQ
+    )
+
     $opts = $global:ZcmderOptions
+    $git_status = $null
 
     # if set, update git status first to avoid choppy printing
     if ($opts.DeferPromptWrite -and $opts.Components.GitStatus) {
-        Set-ZCStateGitStatus
+        $git_status = Get-ZCGitStatus
     }
     # new line before prompt if not at top row
     if ($opts.NewlineBeforePrompt -and !$Host.UI.RawUI.CursorPosition.Y -eq 0) {
@@ -174,13 +203,13 @@ function Write-ZcmderPrompt {
         Write-ZCUserAndHost
     }
     if ($opts.Components.Cwd) {
-        Write-ZCCwd
+        Write-ZCCwd -IsAdmin:$IsAdmin
     }
     if ($opts.Components.GitStatus) {
-        if (!$opts.DeferPromptWrite) {
-            Set-ZCStateGitStatus
+        if (!$git_status) {
+            $git_status = Get-ZCGitStatus
         }
-        Write-ZCGitStatus
+        Write-ZCGitStatus $git_status
     }
-    Write-ZCCaret
+    Write-ZCCaret -IsAdmin:$IsAdmin -ExitCode:$ExitCode -DollarQ:$DollarQ
 }

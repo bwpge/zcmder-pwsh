@@ -10,17 +10,17 @@ $is_admin = Test-ZCIsAdmin
 Remove-ZCVariable ZcmderOptions
 Remove-ZCVariable ZcmderState
 $global:ZcmderOptions = [ZCOptions]::new()
-$global:ZcmderState = [ZCState]::new()
 
 $prompt_block = {
+    # NOTE: $? must be captured before *any* statement because powershell always
+    # needs to do things in convoluted and confusing ways
+    $dollar_q = $global:?
     $exit_code = $global:LASTEXITCODE
-    $global:ZcmderState.ExitCode = $exit_code
-    $global:ZcmderState.IsAdmin = $is_admin
 
-    Write-ZcmderPrompt | Out-Null
+    Write-ZcmderPrompt -IsAdmin:$is_admin -ExitCode:$exit_code -DollarQ:$dollar_q | Out-Null
     $global:LASTEXITCODE = $exit_code
 
-    # need to return a string to get the PS> prompt
+    # need to return a string to avoid the PS> prompt
     " "
 }
 
@@ -49,5 +49,4 @@ $ExecutionContext.SessionState.Module.OnRemove = {
 
     # always clean up our global variables
     Remove-ZCVariable ZcmderOptions
-    Remove-ZCVariable ZcmderState
 }
