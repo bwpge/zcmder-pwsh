@@ -12,12 +12,11 @@ function Test-ZCIsAdmin {
     ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-function Test-IsReadOnlyDir {
-    param($path)
-
-    if (-not $(Test-Path $path) -or -not $(Test-Path $path -PathType Container)) {
-        return $false
-    }
+function Test-ZCReadOnlyDir {
+    param(
+        [ValidateScript({Test-Path $path -PathType Container})]
+        $path
+    )
 
     # see: https://stackoverflow.com/a/34180361/
     $modify = [System.Security.AccessControl.FileSystemRights]::Modify -as [int]
@@ -35,53 +34,29 @@ function Test-IsReadOnlyDir {
     @($acl).Length -eq 0
 }
 
-function Write-ZCPath {
-    param ([string]$path)
-
+function Get-ZCPath([string]$path) {
     $result = $path
     if ($global:ZcmderOptions.UnixPathStyle) {
         $home_path = $env:USERPROFILE  # $HOME might not be set
-        $root_drive = $env:HOMEDRIVE
-
         $result = switch -Wildcard ($path) {
             "$home_path"    { "~" }
             "$home_path\*"  { $path.Replace($home_path, "~") }
             default         { $path }
         }
 
-        $result = $result -creplace "^$root_drive"
-        $result = $result.Replace("\", "/")
+        $result = $result -creplace "^$env:HOMEDRIVE",'' -replace '\\','/'
     }
 
     $result
 }
 
-function Test-ZCCmdExists {
-    param ($command)
-    $original = $ErrorActionPreference
-    $ErrorActionPreference = "Stop"
-
-    try {
-        if (Get-Command $command) { return $true }
-    } catch {
-    } finally {
-        $ErrorActionPreference = $original
-    }
-
-    $false
-}
-
-function Remove-ZCVariable {
-    param($name)
-
-    if (Get-Variable -Scope Global $name 2>$null) {
+function Remove-ZCVariable($name) {
+    if (Test-Path "variable:global:$name" 2>$null) {
         Remove-Variable -Name $name -Scope Global -EA 0
     }
 }
 
-function Get-ZCConsoleColor {
-    param([string]$value)
-
+function Get-ZCConsoleColor([string]$value) {
     # avoid "partial" matching that .NET does (e.g., "blu" will match "Blue")
     [enum]::GetValues([System.ConsoleColor]) | %{
         if ($value -eq $_.ToString()) {

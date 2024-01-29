@@ -1,36 +1,22 @@
-# this function uses beatcracker/Powershell-Misc as a reference for implementation
-# see: https://github.com/beatcracker/Powershell-Misc/blob/master/Write-Host.ps1
 function New-ZCAnsiString {
     param(
-        [Parameter(
-            Position=0,
-            ValueFromPipeline=$true,
-            ValueFromRemainingArguments=$true
-        )]
-        [Alias('Msg', 'Message')]
-        [System.Object[]]$Object,
+        [Parameter(Mandatory = $true)]
+        [System.Object]$Object,
         [AllowNull()]
         [ZCColor]$Color,
         [AllowNull()]
         [ZCStyle]$Style,
-        [switch]$NoNewline,
-        [System.Object]$Prefix,
-        [System.Object]$Suffix
+        [System.Object]$Before,
+        [System.Object]$After
     )
 
-    begin {
-        $esc = [char]27
-        $reset = "$esc[0m"
-    }
-
-    process {
-        if (!$Host.UI.SupportsVirtualTerminal -or (!$Color -and !$Style)) {
-            "$Prefix$Object$Suffix"
-        } else {
-            $c = if ($Color) { $Color.ToAnsiString() } else { "" }
-            $s = if ($Style) { $Style.ToAnsiString() } else { "" }
-            "$Prefix$s$c$Object$reset$Suffix"
-        }
+    if (!$Host.UI.SupportsVirtualTerminal -or (!$Color -and !$Style)) {
+        "$Before$Object$After"
+    } else {
+        $reset = "{0}[0m" -f ([char]27)
+        $c = if ($Color) { $Color.ToAnsiString() } else { "" }
+        $s = if ($Style) { $Style.ToAnsiString() } else { "" }
+        "$Before$s$c$Object$reset$After"
     }
 }
 
@@ -43,7 +29,7 @@ function Get-ZCPythonEnv {
     if ($py) {
         $color = $global:ZcmderOptions.Colors.PythonEnv
         $style = $global:ZcmderOptions.Styles.PythonEnv
-        New-ZCAnsiString "$py" -Color $color -Style $style -Suffix ' '
+        New-ZCAnsiString "$py" -Color $color -Style $style -After ' '
     }
     else {
         ""
@@ -60,7 +46,7 @@ function Get-ZCUserAndHost {
         $values.Add($env:COMPUTERNAME)
     }
     $s = ($values -join '@')
-    New-ZCAnsiString $s -Color $opts.Colors.UserAndHost -Style $opts.Styles.UserAndHost -Suffix ' '
+    New-ZCAnsiString $s -Color $opts.Colors.UserAndHost -Style $opts.Styles.UserAndHost -After ' '
 }
 
 function Get-ZCCwd {
@@ -71,73 +57,73 @@ function Get-ZCCwd {
 
     $opts = $global:ZcmderOptions
     $path = $ExecutionContext.SessionState.Path.CurrentLocation
-    $p = Write-ZCPath $path
+    $p = Get-ZCPath $path
 
     $prefix = ""
     $color = $global:ZcmderOptions.Colors.Cwd
     $style = $global:ZcmderOptions.Styles.Cwd
-    if (!$IsAdmin -and (Test-IsReadOnlyDir $path)) {
+    if (!$IsAdmin -and (Test-ZCReadOnlyDir $path)) {
         $prefix = $opts.Strings.ReadOnlyPrefix
         $color = $opts.Colors.CwdReadOnly
     }
-    New-ZCAnsiString "$prefix$p" -Color $color -Style $style -Suffix ' '
+    New-ZCAnsiString "$prefix$p" -Color $color -Style $style -After ' '
 }
 
 function Get-ZCGitPrompt {
     param(
         [Parameter(Position = 0, Mandatory = $true)]
-        [ZCGitStatus]$GitStatus
+        [ZCGitInfo]$Info
     )
 
-    if (!$GitStatus.IsRepo) {
+    if (!$Info.Dir) {
         return ""
     }
     $opts = $global:ZcmderOptions
 
     # get status modifiers from local changes
     $modifier = ""
-    if ($GitStatus.Changes) {
+    if ($Info.Changes) {
         $modifier += $opts.Strings.GitDirtyPostfix
     }
     # otherwise repo is clean, but don't show if in a new repo
-    elseif ($GitStatus.Label -ne $opts.Strings.GitLabelNew) {
+    elseif ($Info.Label -ne $opts.Strings.GitLabelNew) {
         $modifier = $opts.Strings.GitCleanPostfix
     }
     # add stashed modifier
-    if ($GitStatus.Stashed) {
+    if ($Info.Stashed) {
         $modifier += $opts.Strings.GitStashedModifier
     }
 
     # branch suffix from remote status
-    $diverged = $GitStatus.IsDiverged()
+    $diverged = $Info.IsDiverged()
     $suffix = ""
     if ($diverged) {
         $suffix = $opts.Strings.GitDivergedPostfix
-    } elseif ($GitStatus.Ahead) {
+    } elseif ($Info.Ahead) {
         $suffix = $opts.Strings.GitAheadPostfix
-    } elseif ($GitStatus.Behind) {
+    } elseif ($Info.Behind) {
         $suffix = $opts.Strings.GitBehindPostfix
     }
 
     # get color based on local or remote
-    $color = if ($GitStatus.Changes -and ($GitStatus.Changes -eq $GitStatus.Staged)) {
+    $color = if ($Info.Changes -and ($Info.Changes -eq $Info.Staged)) {
         $opts.Colors.GitStaged
-    } elseif ($GitStatus.Unmerged -or $diverged) {
+    } elseif ($Info.Unmerged -or $diverged) {
         $opts.Colors.GitUnmerged
-    } elseif ($GitStatus.Untracked -gt 0) {
+    } elseif ($Info.Untracked -gt 0) {
         $opts.Colors.GitUntracked
-    } elseif ($GitStatus.Modified -gt 0) {
+    } elseif ($Info.Modified -gt 0) {
         $opts.Colors.GitModified
-    } elseif ($GitStatus.IsNew) {
+    } elseif ($Info.IsNew) {
         $opts.Colors.GitNewRepo
     } else {
         $opts.Colors.GitBranchDefault
     }
 
-    $remote = if ($GitStatus.Remote) { ":" + $GitStatus.Remote }
-    $label = $opts.Strings.GitPrefix + $GitStatus.Label
-    $style = $opts.Styles.GitStatus
-    New-ZCAnsiString $label$remote$modifier$suffix -NoNewline -Color $color -Style $style -Prefix $opts.Strings.GitSeparator
+    $remote = if ($Info.Remote) { ":" + $Info.Remote }
+    $label = $opts.Strings.GitPrefix + $Info.Label
+    $style = $opts.Styles.Info
+    New-ZCAnsiString $label$remote$modifier$suffix -Color $color -Style $style -Before $opts.Strings.GitSeparator
 }
 
 function Get-ZCCaret {
@@ -161,7 +147,7 @@ function Get-ZCCaret {
     $style = $opts.Styles.Caret
     $caret = if ($IsAdmin) { $opts.Strings.CaretAdmin } else { $opts.Strings.Caret }
 
-    New-ZCAnsiString $caret -Color $color -Style $style -Prefix "`n" -Suffix ' '
+    New-ZCAnsiString $caret -Color $color -Style $style -Before "`n" -After ' '
 }
 
 function Get-ZcmderPrompt {
@@ -190,7 +176,7 @@ function Get-ZcmderPrompt {
         [void]$sb.Append((Get-ZCCwd -IsAdmin:$IsAdmin))
     }
     if ($opts.Components.GitStatus) {
-        [void]$sb.Append((Get-ZCGitPrompt (Get-ZCGitStatus)))
+        [void]$sb.Append((Get-ZCGitPrompt (Get-ZCGitInfo)))
     }
     [void]$sb.Append((Get-ZCCaret -IsAdmin:$IsAdmin -ExitCode:$ExitCode -DollarQ:$DollarQ))
     $sb.ToString()

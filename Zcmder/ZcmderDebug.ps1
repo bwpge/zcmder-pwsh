@@ -48,17 +48,12 @@ function Get-ZCPropertyTable {
                 $table[$key] = Format-ZCPropertyValue $item.Value
             }
             continue
-        } elseif ($ty -eq "ZCOptions" -or $ty -eq "ZCGitStatus") {
+        } elseif ($ty -eq "ZCOptions" -or $ty -eq "ZCGitInfo") {
             Get-ZCPropertyTable $prop.Value $k
             continue
         }
 
-        $v = Format-ZCPropertyValue $prop.Value $ty
-        if ($ty -eq "TimeSpan") {
-            $table["Times.$k"] = $v
-        } else {
-            $table[$k] = $v
-        }
+        $table[$k] = (Format-ZCPropertyValue $prop.Value $ty)
     }
 
     $table
@@ -86,7 +81,7 @@ function Write-ZCSortedTable {
     $table | %{
         $_.GetEnumerator() |
         Sort-Object -Property Name |
-        Format-Table -AutoSize -HideTableHeaders -Wrap -Property:$Property
+        Format-Table -AutoSize -HideTableHeaders -Wrap -Property:$Property | Out-Host
     }
 }
 
@@ -126,9 +121,9 @@ function Write-ZcmderDebugInfo {
     Write-Host "<<<<<<<<<<`n"
 
     Write-ZCDebugHeader "Git Status"
-    $git_status_cmd = Measure-ZCCommandWithOutput { Get-ZCGitStatus }
-    $times["Parse git status"] = $git_status_cmd.Elapsed
-    Write-ZCSortedTable (Get-ZCPropertyTable $git_status_cmd.Output[0])
+    $git_info_cmd = Measure-ZCCommandWithOutput { Get-ZCGitInfo }
+    $times["Parse git status"] = $git_info_cmd.Elapsed
+    Write-ZCSortedTable (Get-ZCPropertyTable $git_info_cmd.Output[0])
 
     Write-ZCDebugHeader "Options"
     $table = Merge-ZCPropertyTables (Get-ZCPropertyTable $global:ZcmderOptions)
@@ -138,7 +133,7 @@ function Write-ZcmderDebugInfo {
         "Render component: python env" = { Get-ZCPythonEnv }
         "Render component: user and host" = { Get-ZCUserAndHost }
         "Render component: cwd" = { Get-ZCCwd -IsAdmin:$is_admin }
-        "Render component: git status" = { Get-ZCGitPrompt -GitStatus:$git_status_cmd.Output[0] }
+        "Render component: git status" = { Get-ZCGitPrompt $git_info_cmd.Output[0] }
         "Render component: caret" = { Get-ZCCaret -IsAdmin:$is_admin -ExitCode:$exit_code -DollarQ:$dollar_q }
     }
     foreach ($item in $commands.GetEnumerator()) {

@@ -15,6 +15,11 @@ $is_admin = Test-ZCIsAdmin
 Remove-ZCVariable ZcmderOptions
 $global:ZcmderOptions = [ZCOptions]::new()
 
+# check if git is available
+if (!([bool](Get-Command 'git' -EA 0 2>$null))) {
+    $global:ZcmderOptions.Components.GitStatus = $false
+}
+
 $prompt_block = {
     # NOTE: $? must be captured before *any* statement because powershell always
     # needs to do things in convoluted and confusing ways

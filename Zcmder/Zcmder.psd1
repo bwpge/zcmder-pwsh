@@ -27,7 +27,7 @@ FunctionsToExport = @('Set-ZcmderPrompt', 'Write-ZcmderDebugInfo', 'New-ZCStyle'
 CmdletsToExport = @()
 
 # Variables to export from this module
-VariablesToExport = @('ZcmderOptions', 'ZcmderState')
+VariablesToExport = @('ZcmderOptions')
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = @()
@@ -36,7 +36,7 @@ AliasesToExport = @()
 PrivateData = @{
     PSData = @{
         # A URL to the license for this module.
-        # # LicenseUri = ''
+        LicenseUri = 'https://github.com/bwpge/zcmder-pwsh/blob/main/LICENSE'
 
         # A URL to the main website for this project
         ProjectUri = 'https://github.com/bwpge/zcmder-pwsh'

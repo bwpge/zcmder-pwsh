@@ -230,7 +230,7 @@ class ZCOptions {
     })
 }
 
-class ZCGitStatus {
+class ZCGitInfo {
     [int]$Ahead = 0
     [int]$Behind = 0
     [int]$Changes = 0
@@ -243,7 +243,6 @@ class ZCGitStatus {
     [string]$Label = ""
     [string]$Remote = ""
     $Dir = $null
-    [bool]$IsRepo = $false
     [bool]$IsNew = $false
 
     [bool] IsDiverged() {

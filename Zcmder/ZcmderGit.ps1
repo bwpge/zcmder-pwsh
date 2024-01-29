@@ -1,5 +1,5 @@
 function Invoke-ZCGit {
-    git --no-optional-locks $args
+    git --no-optional-locks @args
 }
 
 function Get-ZCGitDir {
@@ -9,14 +9,12 @@ function Get-ZCGitDir {
     }
 }
 
-function Get-ZCGitStatus {
+function Get-ZCGitInfo {
     $opts = $global:ZcmderOptions
-    $state = [ZCGitStatus]::new()
-    $state.Dir = Get-ZCGitDir
-    $state.IsRepo = [bool]$state.Dir
-    $state.IsNew = $false
+    $info = [ZCGitInfo]::new()
+    $info.Dir = Get-ZCGitDir
 
-    if (!$state.IsRepo) { return $state }
+    if (!$info.Dir) { return $info }
 
     # try and get current git label
     $label = Invoke-ZCGit rev-parse --abbrev-ref HEAD 2>$null
@@ -26,20 +24,20 @@ function Get-ZCGitStatus {
     # check if a new repo
     if ([string]::IsNullOrEmpty($label)) {
         $label = $opts.Strings.GitLabelNew
-        $state.IsNew = $true
+        $info.IsNew = $true
     }
-    $state.Label = $label
+    $info.Label = $label
 
     # set remote label (avoid git call if not needed)
     if ($opts.GitShowRemote) {
-        $state.Remote = Invoke-ZCGit rev-parse --abbrev-ref --symbolic-full-name "@{upstream}" 2>$null
+        $info.Remote = Invoke-ZCGit rev-parse --abbrev-ref --symbolic-full-name "@{upstream}" 2>$null
     } else {
-        $state.Remote = ""
+        $info.Remote = ""
     }
 
     # update status
-    $status = Invoke-ZCGit status --porcelain -b 2>$null
-    foreach ($line in $status) {
+    $git_status = Invoke-ZCGit status --porcelain -b 2>$null
+    foreach ($line in $git_status) {
         if ($line.Length -lt 2) { continue }
 
         # check branch info, example:
@@ -53,27 +51,27 @@ function Get-ZCGitStatus {
                     continue
                 }
                 if ($matches[1] -eq "ahead") {
-                    $state.Ahead += [int]$matches[2]
+                    $info.Ahead += [int]$matches[2]
                 } elseif ($matches[1] -eq "behind") {
-                    $state.Behind += [int]$matches[2]
+                    $info.Behind += [int]$matches[2]
                 } elseif ($matches[1] -eq "diverged") {
-                    $state.Diverged += [int]$matches[2]
+                    $info.Diverged += [int]$matches[2]
                 }
             }
         } else {
-            $state.Changes++
+            $info.Changes++
             switch -regex ($line.Substring(0, 2)) {
-                '\?.'     { $state.Untracked++ }
-                'U.'      { $state.Unmerged++ }
-                '(.M| .)' { $state.Modified++ }
-                default   { $state.Staged++ }
+                '\?.'     { $info.Untracked++ }
+                'U.'      { $info.Unmerged++ }
+                '(.M| .)' { $info.Modified++ }
+                default   { $info.Staged++ }
             }
         }
     }
 
     # check for any stashes
     # see: https://stackoverflow.com/a/53823705
-    $state.Stashed = [int](Invoke-ZCGit rev-list --walk-reflogs --count refs/stash 2>$null)
+    $info.Stashed = [int](Invoke-ZCGit rev-list --walk-reflogs --count refs/stash 2>$null)
 
-    return $state
+    $info
 }

@@ -224,7 +224,6 @@ Changes   0
 Dir       C:\Users\user\sample-repo\.git
 Diverged  0
 IsNew     True
-IsRepo    True
 Label     "(new)"
 Modified  0
 Remote    ""
