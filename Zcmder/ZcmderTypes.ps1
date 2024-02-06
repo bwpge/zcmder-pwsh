@@ -4,6 +4,13 @@
     Rgb
 }
 
+enum ZCOs {
+    Unknown
+    MacOS
+    Linux
+    Windows
+}
+
 class ZCBaseColor {
     [PSObject]$Value = $null
     [ZCColorType]$Kind = [ZCColorType]::None
@@ -16,6 +23,13 @@ class ZCBaseColor {
     }
 
     ZCBaseColor([string]$val) {
+        # check for empty colors
+        if (!$val) {
+            $this.Value = $null
+            $this.Kind = [ZCColorType]::None
+            return
+        }
+
         # try getting a ConsoleColor by name
         if ($color = Get-ZCConsoleColor $val) {
             $this.Value = Convert-ZCConsoleTo256Color $color
@@ -186,6 +200,7 @@ class ZCOptions {
         Cwd = $true
         GitStatus = $true
         Hostname = $false
+        Os = $false
         PythonEnv = $true
         Username = $false
     }
@@ -203,6 +218,9 @@ class ZCOptions {
         GitPrefix           = " "
         GitSeparator        = "on "
         GitStashedModifier  = " ⚑"
+        OsWindows           = ""
+        OsMac               = ""
+        OsLinux             = ""
         ReadOnlyPrefix      = " "
     }
 
@@ -217,6 +235,7 @@ class ZCOptions {
         GitStaged        = "DarkBlue"
         GitUnmerged      = "DarkMagenta"
         GitUntracked     = "DarkRed"
+        Os               = [ZCColor]::new()
         PythonEnv        = "DarkGray"
         UserAndHost      = "DarkBlue"
     })
@@ -225,6 +244,7 @@ class ZCOptions {
         Caret = [ZCStyle]::new()
         Cwd = [ZCStyle]::new()
         GitStatus = [ZCStyle]::new()
+        Os = [ZCStyle]::new()
         PythonEnv = [ZCStyle]::new()
         UserAndHost = [ZCStyle]::new()
     })

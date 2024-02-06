@@ -11,6 +11,7 @@ if (!$Host.UI.SupportsVirtualTerminal) {
 
 $default_prompt = Get-ZCCurrentPrompt
 $is_admin = Test-ZCIsAdmin
+$os_type = Get-ZCOsType
 
 Remove-ZCVariable ZcmderOptions
 $global:ZcmderOptions = [ZCOptions]::new()
@@ -25,7 +26,7 @@ $prompt_block = {
     # needs to do things in convoluted and confusing ways
     $dollar_q = $global:?
     $exit_code = $global:LASTEXITCODE
-    $text = Get-ZcmderPrompt -IsAdmin:$is_admin -ExitCode:$exit_code -DollarQ:$dollar_q
+    $text = Get-ZcmderPrompt -IsAdmin:$is_admin -OsType:$os_type -ExitCode:$exit_code -DollarQ:$dollar_q
     $global:LASTEXITCODE = $exit_code
 
     $text

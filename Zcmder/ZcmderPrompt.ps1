@@ -36,6 +36,26 @@ function Get-ZCPythonEnv {
     }
 }
 
+function Get-ZCOs {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ZCOs]$OsType
+    )
+
+    $opts = $global:ZcmderOptions
+    $icon = switch ($OsType) {
+        ([ZCOs]::Windows) { $opts.Strings.OsWindows }
+        ([ZCOs]::Linux) { $opts.Strings.OsLinux }
+        ([ZCOs]::MacOS) { $opts.Strings.OsMac }
+        default { $null }
+    }
+    if ($icon) {
+        New-ZCAnsiString $icon -Color $global:ZcmderOptions.Colors.Os -Style $global:ZcmderOptions.Styles.Os -After ' '
+    } else {
+        ""
+    }
+}
+
 function Get-ZCUserAndHost {
     $opts = $global:ZcmderOptions
     $values = [System.Collections.Generic.List[string]]::new()
@@ -155,6 +175,8 @@ function Get-ZcmderPrompt {
         [Parameter(Mandatory = $true)]
         [bool]$IsAdmin,
         [Parameter(Mandatory = $true)]
+        [ZCOs]$OsType,
+        [Parameter(Mandatory = $true)]
         [int]$ExitCode,
         [Parameter(Mandatory = $true)]
         [bool]$DollarQ
@@ -168,6 +190,9 @@ function Get-ZcmderPrompt {
     }
     if ($opts.Components.PythonEnv) {
         [void]$sb.Append((Get-ZCPythonEnv))
+    }
+    if ($opts.Components.Os) {
+        [void]$sb.Append((Get-ZCOs -OsType:$OsType))
     }
     if ($opts.Components.Username -or $opts.Components.Hostname) {
         [void]$sb.Append((Get-ZCUserAndHost))

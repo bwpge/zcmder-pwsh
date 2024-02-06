@@ -34,6 +34,19 @@ function Test-ZCReadOnlyDir {
     @($acl).Length -eq 0
 }
 
+function Get-ZCOsType {
+    # < PS6 doesn't have easy ways to get the OS since it only runs on windows
+    if ($PSVersionTable.PSVersion.Major -le 5 -or $global:IsWindows) {
+        [ZCOs]::Windows
+    } elseif ($global:IsLinux) {
+        [ZCOs]::Linux
+    } elseif ($global:IsMacOS) {
+        [ZCOs]::MacOS
+    } else {
+        [ZCOs]::Unknown
+    }
+}
+
 function Get-ZCPath([string]$path) {
     $result = $path
     if ($global:ZcmderOptions.UnixPathStyle) {

@@ -99,6 +99,7 @@ function Write-ZcmderDebugInfo {
     $dollar_q = $global:?
     $exit_code = $global:LASTEXITCODE
     $is_admin = Test-ZCIsAdmin
+    $os_type = Get-ZCOsType
     $times = @{}
 
     Write-Host
@@ -114,7 +115,7 @@ function Write-ZcmderDebugInfo {
     }
 
     Write-ZCDebugHeader "Prompt output"
-    $prompt_cmd = Measure-ZCCommandWithOutput { Get-ZcmderPrompt -IsAdmin:$is_admin -ExitCode:$exit_code -DollarQ:$dollar_q }
+    $prompt_cmd = Measure-ZCCommandWithOutput { Get-ZcmderPrompt -IsAdmin:$is_admin -OsType:$os_type -ExitCode:$exit_code -DollarQ:$dollar_q }
     $times["Render full prompt"] = $prompt_cmd.Elapsed
     Write-Host "`n>>>>>>>>>>"
     Write-Host ($prompt_cmd.Output  -replace ([char]27),'\x1b')
@@ -130,11 +131,12 @@ function Write-ZcmderDebugInfo {
     Write-ZCSortedTable $table
 
     $commands = @{
-        "Render component: python env" = { Get-ZCPythonEnv }
-        "Render component: user and host" = { Get-ZCUserAndHost }
+        "Render component: caret" = { Get-ZCCaret -IsAdmin:$is_admin -ExitCode:$exit_code -DollarQ:$dollar_q }
         "Render component: cwd" = { Get-ZCCwd -IsAdmin:$is_admin }
         "Render component: git status" = { Get-ZCGitPrompt $git_info_cmd.Output[0] }
-        "Render component: caret" = { Get-ZCCaret -IsAdmin:$is_admin -ExitCode:$exit_code -DollarQ:$dollar_q }
+        "Render component: python env" = { Get-ZCPythonEnv }
+        "Render component: user and host" = { Get-ZCUserAndHost }
+        "Render component: os" = { Get-ZCOs -OsType:$os_type }
     }
     foreach ($item in $commands.GetEnumerator()) {
         $times[$item.Name] = (Measure-ZCCommandWithOutput $item.Value).Elapsed
