@@ -200,7 +200,7 @@ class ZCOptions {
         GitDivergedPostfix  = " ↑↓"
         GitLabelNew         = "(new)"
         GitPostfix          = ""
-        GitPrefix           = " "
+        GitPrefix           = " "
         GitSeparator        = "on "
         GitStashedModifier  = " ⚑"
         ReadOnlyPrefix      = " "
